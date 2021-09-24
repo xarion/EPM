@@ -55,7 +55,7 @@ def create_density_plot(data, density_labels):
 
     facet_grid.despine(bottom=True, left=True)
 
-    viz_utils.save_figure(facet_grid, "demo.png")
+    viz_utils.save_figure(facet_grid, "demo.png", "results")
 
 
 
