@@ -5,6 +5,7 @@ from sklearn.covariance import ShrunkCovariance
 from sklearn.preprocessing import StandardScaler
 
 
+# Fix
 def normalize_array_between(data, old_low, old_high, new_low, new_high):
     # old_range = data.max() - data.min()
     old_range = old_high - old_low
