@@ -1,0 +1,3 @@
+from models import create_feature_extractor_model
+
+create_feature_extractor_model()
