@@ -9,15 +9,41 @@ sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
 
 
 def create_dummy_data():
-    distr_1 = viz_utils.normalize_array_between(np.random.rand(50), 0, 1)
-    distr_2 = viz_utils.normalize_array_between(np.random.rand(50), 1.5, 3)
-    distr_3 = viz_utils.normalize_array_between(np.random.rand(50), 2, 5)
+    rs = np.random.RandomState(seed=0)
+    distr_1 = viz_utils.normalize_array_between(rs.rand(50), 0, 1)
+    distr_2 = viz_utils.normalize_array_between(rs.rand(50), 1.5, 3)
+    distr_3 = viz_utils.normalize_array_between(rs.rand(50), 2, 5)
 
     return distr_1, distr_2, distr_3
 
 
+def read_data(path, extra=0):
+    data = np.load(path)
 
-def create_density_plot(data, density_labels):
+    if extra:
+        mu = np.mean(data, axis=0)
+        cov_mat = np.cov(np.transpose(data))
+    else:
+        mu = None
+        cov_mat = None
+    return data, mu, cov_mat
+
+
+# for now, use this until we have the training data encodings
+def create_gaussian_data(extra=0):
+    rs = np.random.RandomState(seed=0)
+    data = rs.normal(size=(50, 2048))
+    data = viz_utils.normalize_array_between(data, data.min(), data.max(), 0, 1)
+    if extra:
+        mu = np.mean(data, axis=0)
+        cov_mat = np.cov(np.transpose(data))
+    else:
+        mu = None
+        cov_mat = None
+    return data, mu, cov_mat
+
+
+def create_density_plot(data, density_labels, name):
 
     number_of_densities = len(data)
 
@@ -25,7 +51,7 @@ def create_density_plot(data, density_labels):
 
     data_cat = np.concatenate(data)
 
-    density_labels_rep = np.repeat(density_labels, 50)
+    density_labels_rep = np.repeat(density_labels, len(data[0]))
 
     data_frame = pd.DataFrame(dict(x=data_cat, g=density_labels_rep))
 
@@ -55,12 +81,29 @@ def create_density_plot(data, density_labels):
 
     facet_grid.despine(bottom=True, left=True)
 
-    viz_utils.save_figure(facet_grid, "demo.png", "results")
+
+    viz_utils.save_figure(facet_grid, "%s.png" % name, "results")
 
 
+val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
+val_encodings = read_data(val_path, extra=0)[0]
+gaussian_data = create_gaussian_data(extra=0)[0]
 
+print("gauss-gauss")
+# distance_1 = viz_utils.mahalanobis_distance(gaussian_data, gaussian_data)
+print("gauss-val")
+distance_2 = viz_utils.mahalanobis_distance(gaussian_data, val_encodings)
+print("val-val")
+distance_3 = viz_utils.mahalanobis_distance(val_encodings, val_encodings)
 
-the_data = create_dummy_data()
-the_labels = ['Train', 'Val', 'OOD']
+data = (distance_2, distance_3)
+# low, high = viz_utils.get_low_high(data)
+# norm_distance_1 = viz_utils.normalize_array_between(distance_1, low, high, 0, 10)
+# norm_distance_2 = viz_utils.normalize_array_between(distance_2, low, high, 0, 10)
 
-create_density_plot(the_data, the_labels)
+# data = (norm_distance_1, norm_distance_2)
+labels = ["gauss-val", "val-val"]
+name = "gaussian_validation"
+
+# create_density_plot((distance_1, distance_2, distance_3), ["gauss-gauss", "gauss-val", "val-val"], name)
+create_density_plot(data, labels, name)
