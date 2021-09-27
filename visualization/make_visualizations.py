@@ -81,29 +81,79 @@ def create_density_plot(data, density_labels, name):
 
     facet_grid.despine(bottom=True, left=True)
 
-
     viz_utils.save_figure(facet_grid, "%s.png" % name, "results")
 
 
-val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
-val_encodings = read_data(val_path, extra=0)[0]
-gaussian_data = create_gaussian_data(extra=0)[0]
+def create_density_plot_single(data, density_label):
 
-print("gauss-gauss")
-# distance_1 = viz_utils.mahalanobis_distance(gaussian_data, gaussian_data)
-print("gauss-val")
-distance_2 = viz_utils.mahalanobis_distance(gaussian_data, val_encodings)
-print("val-val")
-distance_3 = viz_utils.mahalanobis_distance(val_encodings, val_encodings)
+    data_frame = pd.DataFrame(dict(x=data, g=density_label))
 
-data = (distance_2, distance_3)
-# low, high = viz_utils.get_low_high(data)
-# norm_distance_1 = viz_utils.normalize_array_between(distance_1, low, high, 0, 10)
-# norm_distance_2 = viz_utils.normalize_array_between(distance_2, low, high, 0, 10)
+    palette = sns.cubehelix_palette(2, rot=-.25, light=.7)
+    facet_grid = sns.FacetGrid(data_frame, row="g", hue="g", aspect=10, height=0.9, palette=palette)
 
-# data = (norm_distance_1, norm_distance_2)
-labels = ["gauss-val", "val-val"]
-name = "gaussian_validation"
+    # Draw the densities in a few steps
+    facet_grid.map(sns.kdeplot, "x", bw_adjust=.5, clip_on=False, fill=True, alpha=1, linewidth=1.5)
+    facet_grid.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
 
-# create_density_plot((distance_1, distance_2, distance_3), ["gauss-gauss", "gauss-val", "val-val"], name)
-create_density_plot(data, labels, name)
+    # passing color=None to refline() uses the hue mapping
+    facet_grid.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
+
+    def label(x, color, label):
+        ax = plt.gca()
+        ax.text(0, .2, label, fontweight="bold", color=color, ha="left", va="center", transform=ax.transAxes)
+
+    facet_grid.map(label, "x")
+
+    # Set the subplots to overlap
+    facet_grid.figure.subplots_adjust(hspace=-.25)
+
+    # Remove axes details that don't play well with overlap
+    facet_grid.set_titles("")
+    facet_grid.set(yticks=[], ylabel="", xlabel="Normalized Mahalanobis Distance")
+
+    facet_grid.despine(bottom=True, left=True)
+    viz_utils.save_figure(facet_grid, "%s.png" % density_label, "results")
+
+
+def create_single_plots():
+    train_path = "/home/gabi/PycharmProjects/EPM/resnet50_train_features.npy"
+    train_encodings = read_data(train_path, extra=0)[0]
+
+    lime_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_0.npy"
+    lime_encodings_1 = read_data(lime_path_1, extra=0)[0]
+
+    lime_path_2 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_1.npy"
+    lime_encodings_2 = read_data(lime_path_2, extra=0)[0]
+
+    anchor_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/anchor/anchor_0.npy"
+    anchor_encodings_1 = read_data(anchor_path_1, extra=0)[0]
+
+    anchor_path_2 = "/home/gabi/PycharmProjects/EPM/xai_methods/anchor/anchor_1.npy"
+    anchor_encodings_2 = read_data(anchor_path_2, extra=0)[0]
+
+    val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
+    val_encodings = read_data(val_path, extra=0)[0]
+
+    distance_1 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_1)
+    distance_2 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_2)
+    distance_3 = viz_utils.mahalanobis_distance(train_encodings, anchor_encodings_1)
+    distance_4 = viz_utils.mahalanobis_distance(train_encodings, anchor_encodings_2)
+    distance_5 = viz_utils.mahalanobis_distance(train_encodings, val_encodings)
+    distance_6 = viz_utils.mahalanobis_distance(train_encodings, train_encodings)
+
+    low, high = viz_utils.get_low_high([distance_1, distance_2, distance_3, distance_4, distance_5])
+
+    distance_1 = viz_utils.normalize_array_between(distance_1, low, high, 0, 1)
+    distance_2 = viz_utils.normalize_array_between(distance_2, low, high, 0, 1)
+    distance_3 = viz_utils.normalize_array_between(distance_3, low, high, 0, 1)
+    distance_4 = viz_utils.normalize_array_between(distance_4, low, high, 0, 1)
+    distance_5 = viz_utils.normalize_array_between(distance_5, low, high, 0, 1)
+    distance_6 = viz_utils.normalize_array_between(distance_6, low, high, 0, 1)
+
+    create_density_plot_single(distance_1, "lime1")
+    create_density_plot_single(distance_2, "lime2")
+    create_density_plot_single(distance_3, "anchor1")
+    create_density_plot_single(distance_4, "anchor2")
+    create_density_plot_single(distance_6, "train")
+    create_density_plot_single(distance_5, "val")
+
