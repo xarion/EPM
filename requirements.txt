@@ -1,12 +1,17 @@
 absl-py==0.12.0
+anchor-exp==0.0.2.0
 astunparse==1.6.3
 attrs==21.2.0
+blis==0.7.4
 cached-property==1.5.2
 cachetools==4.2.2
+catalogue==2.0.6
 certifi==2021.5.30
 charset-normalizer==2.0.6
+click==8.0.1
 cloudpickle==2.0.0
 cycler==0.10.0
+cymem==2.0.5
 dill==0.3.4
 flatbuffers==1.12
 fonttools==4.25.0
@@ -23,6 +28,7 @@ image-classifiers==1.0.0b1
 imageio==2.9.0
 importlib-metadata==4.8.1
 importlib-resources==5.2.2
+Jinja2==3.0.1
 joblib==1.0.1
 Keras-Applications==1.0.8
 keras-nightly==2.5.0.dev2021032900
@@ -31,23 +37,29 @@ kiwisolver @ file:///tmp/build/80754af9/kiwisolver_1612282414123/work
 lime==0.2.0.1
 llvmlite==0.37.0
 Markdown==3.3.4
+MarkupSafe==2.0.1
 matplotlib @ file:///tmp/build/80754af9/matplotlib-suite_1628003481308/work
 mkl-fft==1.3.0
 mkl-random @ file:///tmp/build/80754af9/mkl_random_1626179032232/work
 mkl-service==2.4.0
 munkres==1.1.4
+murmurhash==1.0.5
 networkx==2.6.3
 numba==0.54.0
 numpy @ file:///tmp/build/80754af9/numpy_and_numpy_base_1626264701743/work
 oauthlib==3.1.1
 olefile==0.46
 opt-einsum==3.3.0
+packaging==21.0
 pandas==1.3.3
+pathy==0.6.0
 Pillow @ file:///tmp/build/80754af9/pillow_1625655818400/work
+preshed==3.0.5
 promise==2.3
 protobuf==3.18.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
+pydantic==1.8.2
 pyparsing @ file:///home/linux1/recipes/ci/pyparsing_1610983426697/work
 python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
 pytz==2021.1
@@ -61,6 +73,10 @@ scipy==1.7.1
 shap==0.39.0
 six @ file:///tmp/build/80754af9/six_1623709665295/work
 slicer==0.0.7
+smart-open==5.2.1
+spacy==3.1.3
+spacy-legacy==3.0.8
+srsly==2.4.1
 tensorboard==2.6.0
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.0
@@ -69,12 +85,15 @@ tensorflow-datasets==4.4.0
 tensorflow-estimator==2.5.0
 tensorflow-metadata==1.2.0
 termcolor==1.1.0
+thinc==8.0.10
 threadpoolctl==2.2.0
 tifffile==2021.8.30
 tornado @ file:///tmp/build/80754af9/tornado_1606942283357/work
 tqdm==4.62.3
+typer==0.4.0
 typing-extensions==3.7.4.3
 urllib3==1.26.6
+wasabi==0.8.2
 Werkzeug==2.0.1
 wrapt==1.12.1
 zipp==3.5.0
