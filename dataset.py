@@ -16,7 +16,7 @@ def get_validation_dataset(batch_size=16):
 def get_train_dataset(batch_size=16):
     ds = tfds.load("imagenet2012", split="train", shuffle_files=False, download=True)
     ds = ds.filter(lambda row: row["label"] == IMAGE_CLASS)
-
+    ds = ds.take(250)
     ds = ds.map(lambda row: tf.image.resize(row["image"], (224, 224)))
     if batch_size is not None:
         ds = ds.batch(batch_size)

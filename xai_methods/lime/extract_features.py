@@ -1,3 +1,4 @@
-from models import create_feature_extractor_model
+from features import features_from_modified_inputs
 
-create_feature_extractor_model()
+features_from_modified_inputs("lime", "_0")
+features_from_modified_inputs("lime", "_1")
