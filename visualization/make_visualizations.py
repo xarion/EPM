@@ -197,7 +197,8 @@ def create_joint_plot():
 
 
 def simple_kde_plot():
-    option = 2
+    option = 3
+
     if option == 1:
         val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
         val_encodings = read_data(val_path, extra=0)[0]
@@ -220,20 +221,28 @@ def simple_kde_plot():
         val_encodings = read_data(val_path, extra=0)[0]
         val = viz_utils.mahalanobis_distance(train_encodings, val_encodings)
 
-        data_cat = np.concatenate([train, val])
+        lime_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_0.npy"
+        lime_encodings_1 = read_data(lime_path_1, extra=0)[0]
+        lime1 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_1)
+
+        data_cat = np.concatenate([train, val, lime1])
+        # print(viz_utils.get_low_high(data_cat))
         labels_train = np.array(["train"]).repeat(len(train))
         labels_val = np.array(["val"]).repeat(len(val))
-        labels = np.concatenate([labels_train, labels_val])
+        labels_lime1 = np.array(["lime1"]).repeat(len(lime1))
+        labels = np.concatenate([labels_train, labels_val, labels_lime1])
         df = pd.DataFrame(dict(x=data_cat, g=labels))
 
         # facet_grid = sns.FacetGrid(df, aspect=2.5, height=3)
-        palette = sns.cubehelix_palette(2, rot=-.25, light=.7)
-        facet_grid = sns.FacetGrid(df, row="g", hue="g", aspect=2.5, height=3, palette=palette)
+        # palette = sns.cubehelix_palette(2, rot=-.25, light=.7)
+        facet_grid = sns.FacetGrid(df, row="g", hue="g", aspect=2, height=2.9)
 
-        facet_grid.map(sns.kdeplot, "x").set(xscale="log")
-        facet_grid.map(sns.kdeplot, "x", bw_adjust=.5, clip_on=False, fill=True, alpha=1, linewidth=1.5)
-        facet_grid.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
+        # facet_grid.map(sns.kdeplot, "x").set(xscale="log")
+        facet_grid.map(sns.kdeplot, "x", bw_adjust=0.3, clip_on=False, fill=True, alpha=1, linewidth=0.1,
+                       log_scale=(True, False))
+        # facet_grid.map(sns.kdeplot, "x", clip_on=False, color="w", lw=1, bw_adjust=.5)
         facet_grid.refline(y=0, linewidth=1, linestyle="-", color=None, clip_on=False)
+        # facet_grid.set(ylim=(0, 50))
 
         def label(x, color, label):
             ax = plt.gca()
@@ -241,14 +250,61 @@ def simple_kde_plot():
 
         facet_grid.map(label, "x")
 
+
         # Set the subplots to overlap
         # facet_grid.figure.subplots_adjust(hspace=-.25)
         # Remove axes details that don't play well with overlap
         facet_grid.set_titles("")
-        facet_grid.set(yticks=[], ylabel="", xlabel="Normalized Mahalanobis Distance")
+        facet_grid.set(yticks=[], ylabel="", xlabel="Mahalanobis Distance on Log Scale")
 
         facet_grid.despine(bottom=True, left=True)
+        # facet_grid.fig.tight_layout()
+
         facet_grid.savefig("testing2.png")
+
+    elif option == 3:
+        train_path = "/home/gabi/PycharmProjects/EPM/resnet50_train_features.npy"
+        train_encodings = read_data(train_path, extra=0)[0]
+        train = viz_utils.mahalanobis_distance(train_encodings, train_encodings)
+        df_train = pd.DataFrame(dict(x=train))
+
+        val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
+        val_encodings = read_data(val_path, extra=0)[0]
+        val = viz_utils.mahalanobis_distance(train_encodings, val_encodings)
+        df_val = pd.DataFrame(dict(x=val))
+
+        lime_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_0.npy"
+        lime_encodings_1 = read_data(lime_path_1, extra=0)[0]
+        lime1 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_1)
+        df_lime1 = pd.DataFrame(dict(x=lime1))
+
+        fig, axs = plt.subplots(nrows=3, ncols=1, figsize=(7, 7))
+
+        dfs = [df_train, df_val, df_lime1]
+        labels = ["train", "val", "lime1"]
+
+        for i, ax in enumerate(axs):
+            sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=0.5, fill=True, linewidth=1) #), log_scale=(True, False))
+            ax.get_legend().remove()
+            ax.grid(color='b', linestyle='-', linewidth=0.1)
+            ax.set_ylabel(labels[i])
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+            if i < 2:
+                ax.get_xaxis().set_ticks([])
+            else:
+                ax.set_xlabel("Mahalanobis distance")
+            ax.get_yaxis().set_ticks([])
+
+        xlim = (0, 35000)
+        plt.setp(axs, xlim=xlim)
+
+
+
+
+        plt.savefig("testing3.png")
+
 
 
 simple_kde_plot()
