@@ -131,3 +131,4 @@ dmypy.json
 
 
 xai_methods/*/*.jpg
+models/*
