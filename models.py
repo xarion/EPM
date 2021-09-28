@@ -1,9 +1,17 @@
-from os.path import join
-
+import onnx
 import tensorflow as tf
 from classification_models.tfkeras import Classifiers
+from onnx2pytorch import ConvertModel
 
-from config import MODEL_NAME
+from config import MODEL_NAME, PROJECT_ROOT
+
+
+def create_pytorch_model():
+    onnx_model = onnx.load(f"{PROJECT_ROOT}/models/onnx/{MODEL_NAME}.onnx")
+    model = ConvertModel(onnx_model)
+    model = model.double()
+    model.eval()
+    return model
 
 
 def create_feature_extractor_model():
@@ -30,9 +38,20 @@ def create_adjusted_image_saving_model_for_xai(xai_name):
     return tf.keras.models.Model(first_image_input, model_output)
 
 
+def create_model():
+    classifier, preprocess_input = Classifiers.get(MODEL_NAME)
+    model = classifier((224, 224, 3), weights='imagenet', include_top=True)
+
+    first_image_input = tf.keras.Input((224, 224, 3), batch_size=1, name="image")
+    image_input = preprocess_input(first_image_input)
+    model_output = model(image_input)
+
+    return tf.keras.models.Model(first_image_input, model_output)
+
+
 class SaveLayer(tf.keras.layers.Layer):
 
-    def __init__(self, xai_model_name, trainable=True, name=None, dtype=None, dynamic=False, **kwargs):
+    def __init__(self, xai_model_name, trainable=False, name=None, dtype=None, dynamic=False, **kwargs):
         self.xai_model_name = xai_model_name
         super().__init__(trainable, name, dtype, dynamic, **kwargs)
 
@@ -53,5 +72,6 @@ class SaveLayer(tf.keras.layers.Layer):
             write_op = tf.io.write_file(file_path, jpeg_encoded_input)
             with tf.control_dependencies([write_op]):
                 return image_input
+
         saved_image_inputs = tf.map_fn(__save_each_image, batch_image_input)
         return batch_image_input
