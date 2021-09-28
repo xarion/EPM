@@ -285,17 +285,33 @@ def simple_kde_plot():
 
         for i, ax in enumerate(axs):
             sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=0.5, fill=True, linewidth=1) #), log_scale=(True, False))
+
             ax.get_legend().remove()
-            ax.grid(color='b', linestyle='-', linewidth=0.1)
+            ax.grid(True, color='b', linestyle='-', linewidth=0.1, which="major")
+
             ax.set_ylabel(labels[i])
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             ax.spines['left'].set_visible(False)
             if i < 2:
-                ax.get_xaxis().set_ticks([])
+                for tick in ax.xaxis.get_major_ticks():
+                    tick.tick1line.set_visible(False)
+                    tick.tick2line.set_visible(False)
+                    tick.label1.set_visible(False)
+                    tick.label2.set_visible(False)
+                # ax.get_xaxis().set_ticks([])
+                # ax.tick_params(which='major', # Options for both major and minor ticks
+                #                top='off', # turn off top ticks
+                #                left='off', # turn off left ticks
+                #                right='off',  # turn off right ticks
+                #                bottom='off') # turn off bottom ticks
+
             else:
                 ax.set_xlabel("Mahalanobis distance")
+
+
             ax.get_yaxis().set_ticks([])
+
 
         xlim = (0, 35000)
         plt.setp(axs, xlim=xlim)
