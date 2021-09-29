@@ -7,7 +7,7 @@ from config import IMAGE_CLASS
 
 def get_validation_dataset():
     transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor()])
-    ds = datasets.ImageNet("/home/erdi/tensorflow_datasets/downloads/manual/", split="val", transform=transform)
+    ds = datasets.ImageNet("~/tensorflow_datasets/downloads/manual/", split="val", transform=transform)
 
     classes = torch.tensor([IMAGE_CLASS])
     indices = (torch.tensor(ds.targets)[..., None] == classes).any(-1).nonzero(as_tuple=True)[0]
@@ -18,7 +18,7 @@ def get_validation_dataset():
 
 def get_train_dataset():
     transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor()])
-    ds = datasets.ImageNet("/home/erdi/tensorflow_datasets/downloads/manual/", split="train", transform=transform)
+    ds = datasets.ImageNet("~/tensorflow_datasets/downloads/manual/", split="train", transform=transform)
 
     classes = torch.tensor([IMAGE_CLASS])
     indices = (torch.tensor(ds.targets)[..., None] == classes).any(-1).nonzero(as_tuple=True)[0]
