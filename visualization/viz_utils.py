@@ -3,9 +3,9 @@ import numpy as np
 from scipy.spatial.distance import mahalanobis
 from sklearn.covariance import ShrunkCovariance
 from sklearn.preprocessing import StandardScaler
+import pandas as pd
 
 
-# Fix
 def normalize_array_between(data, old_low, old_high, new_low, new_high):
     # old_range = data.max() - data.min()
     old_range = old_high - old_low
@@ -90,3 +90,26 @@ def get_low_high(arrays):
             max = arr.max()
     return min, max
 
+
+def get_id_data(path):
+    encodings = np.load(path)
+    distances = mahalanobis_distance(encodings, encodings)
+    return encodings, distances
+
+
+def get_data_to_be_measured(path, id_encodings):
+    # check if multiple files or not.
+    # if multiple files, take average over the distances
+    if os.path.isdir(path):
+        npys = [i for i in os.listdir(path) if i.__contains__(".npy")]
+        npys.sort()
+        distances = []
+        for i in npys:
+            encoding = np.load(os.path.join(path, i))
+            distances.append(np.mean(mahalanobis_distance(id_encodings, encoding)))
+        distances = np.array(distances)
+    else:
+        encodings = np.load(path)
+        distances = mahalanobis_distance(id_encodings, encodings)
+
+    return distances
