@@ -8,11 +8,13 @@ from config import MODEL_NAME
 
 def __resnet50():
     model = torchvision.models.resnet50(pretrained=True)
+    model = model.to(torch.device("cpu"))
     return model, model.avgpool
 
 
 def __densenet121():
     model = torchvision.models.densenet121(pretrained=True)
+    model = model.to(torch.device("cpu"))
     return model, model.features
 
 
@@ -24,8 +26,8 @@ def create_model():
     else:
         raise NotImplementedError(f"{MODEL_NAME} is not implemented")
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    normalize = IdentityRuleNormalize(mean=[0.485, 0.456, 0.406],
+                                      std=[0.229, 0.224, 0.225])
     return torch.nn.Sequential(normalize, model), features
 
 
@@ -48,3 +50,9 @@ class InputImageSavingModule(torch.nn.Module):
                 self.counter += 1
                 torchvision.utils.save_image(x[i], f"{self.xai_model_name}.{self.counter}.png")
         return x
+
+
+class IdentityRuleNormalize(transforms.Normalize):
+    def __init__(self, mean, std, inplace=False):
+        self.rule = IdentityRule()
+        super().__init__(mean, std, inplace)
