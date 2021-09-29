@@ -1,23 +1,28 @@
-import tensorflow as tf
-import tensorflow_datasets as tfds
+import torch
+from torch.utils.data import Subset
+from torchvision import datasets, transforms as T
 
 from config import IMAGE_CLASS
 
 
-def get_validation_dataset(batch_size=16):
-    ds = tfds.load("imagenet2012", split="validation", shuffle_files=False)
-    ds = ds.filter(lambda row: row["label"] == IMAGE_CLASS)
+def get_validation_dataset():
+    transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor()])
+    ds = datasets.ImageNet("/home/erdi/tensorflow_datasets/downloads/manual/", split="val", transform=transform)
 
-    ds = ds.map(lambda row: tf.image.resize(row["image"], (224, 224)))
-    if batch_size is not None:
-        ds = ds.batch(batch_size)
+    classes = torch.tensor([IMAGE_CLASS])
+    indices = (torch.tensor(ds.targets)[..., None] == classes).any(-1).nonzero(as_tuple=True)[0]
+    ds = Subset(ds, indices)
+
     return ds
 
-def get_train_dataset(batch_size=16):
-    ds = tfds.load("imagenet2012", split="train", shuffle_files=False, download=True)
-    ds = ds.filter(lambda row: row["label"] == IMAGE_CLASS)
-    ds = ds.take(250)
-    ds = ds.map(lambda row: tf.image.resize(row["image"], (224, 224)))
-    if batch_size is not None:
-        ds = ds.batch(batch_size)
+
+def get_train_dataset():
+    transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor()])
+    ds = datasets.ImageNet("/home/erdi/tensorflow_datasets/downloads/manual/", split="train", transform=transform)
+
+    classes = torch.tensor([IMAGE_CLASS])
+    indices = (torch.tensor(ds.targets)[..., None] == classes).any(-1).nonzero(as_tuple=True)[0]
+    ds = Subset(ds, indices)
+    ds = Subset(ds, torch.tensor(range(0, 250)))
+
     return ds
