@@ -307,7 +307,7 @@ def simple_kde_plot():
         plt.setp(axs, xlim=xlim)
 
 
-        plt.savefig("testing3.png")
+        plt.savefig("visualization/scratch/testing3.png")
 
 
 
