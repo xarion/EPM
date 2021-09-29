@@ -59,6 +59,9 @@ class PerturbedImagesDataset(Dataset):
                                 self.files_list[idx])
         image = Image.open(img_name)
         image_data = np.array(image)
+        if len(image_data.shape) == 2:
+            image_data = np.expand_dims(image_data, axis=2)
+            image_data = np.repeat(image_data, 3, axis=2)
         image_data = image_data.transpose((2, 0, 1)).astype(float)
         torch_image_data = torch.from_numpy(image_data)
         torch_image_data = torch_image_data.float()
