@@ -131,6 +131,7 @@ dmypy.json
 
 
 xai_methods/*/*.jpg
+xai_methods/*/*.png
 models/*
 test/*.png
 visualization/scratch/
