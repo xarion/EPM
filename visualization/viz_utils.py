@@ -105,7 +105,7 @@ def get_data_to_be_measured(path, id_encodings):
         npys.sort()
         distances = []
         for i in npys:
-            encoding = np.load(os.path.join(path, i))
+            encoding = np.load(os.path.join(path, i))[1:]
             distances.append(np.mean(mahalanobis_distance(id_encodings, encoding)))
         distances = np.array(distances)
     else:
