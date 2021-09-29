@@ -257,8 +257,9 @@ def simple_kde_plot():
         val_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy", train_encodings)
         lime_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/xai_methods/lime", train_encodings)
         anchor_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/xai_methods/anchor", train_encodings)
+        wn_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/visualization/white_noise_images/white_noise.npy", train_encodings)
 
-        all_distances = [train_distances, val_distances, lime_distances, anchor_distances]
+        all_distances = [train_distances, val_distances, lime_distances, anchor_distances, wn_distances]
 
         low, high = viz_utils.get_low_high(all_distances)
 
@@ -266,16 +267,18 @@ def simple_kde_plot():
         val_distances = viz_utils.normalize_array_between(val_distances, low, high, 0, 1)
         lime_distances = viz_utils.normalize_array_between(lime_distances, low, high, 0, 1)
         anchor_distances = viz_utils.normalize_array_between(anchor_distances, low, high, 0, 1)
+        wn_distances = viz_utils.normalize_array_between(wn_distances, low, high, 0, 1)
 
         df_train = pd.DataFrame(dict(x=train_distances))
         df_val = pd.DataFrame(dict(x=val_distances))
         df_lime = pd.DataFrame(dict(x=lime_distances))
         df_anchor = pd.DataFrame(dict(x=anchor_distances))
+        df_wn = pd.DataFrame(dict(x=wn_distances))
         
-        fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(7, 7))
+        fig, axs = plt.subplots(nrows=5, ncols=1, figsize=(7, 7))
 
-        dfs = [df_train, df_val, df_anchor, df_lime]
-        labels = ["train (250)", "val (50)", "anchor (2)", "lime (2)"]
+        dfs = [df_train, df_val, df_anchor, df_lime, df_wn]
+        labels = ["train (250)", "val (50)", "anchor (2)", "lime (2)", "white noise (250)"]
 
         for i, ax in enumerate(axs):
             sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=0.5, fill=True, alpha=1, linewidth=1) #), log_scale=(True, False))
@@ -307,7 +310,7 @@ def simple_kde_plot():
         plt.setp(axs, xlim=xlim)
 
 
-        plt.savefig("visualization/scratch/testing3.png")
+        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/scratch/testing4.png")
 
 
 
