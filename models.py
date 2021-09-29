@@ -1,99 +1,50 @@
-import onnx
-import tensorflow as tf
 import torch
 import torchvision
-from classification_models.tfkeras import Classifiers
-from onnx2pytorch import ConvertModel
+from captum.attr._utils.lrp_rules import IdentityRule
+from torchvision.transforms import transforms
 
-from config import MODEL_NAME, PROJECT_ROOT
-
-
-def create_pytorch_model():
-    onnx_model = onnx.load(f"{PROJECT_ROOT}/models/onnx/{MODEL_NAME}.onnx")
-    model = ConvertModel(onnx_model)
-    model = model.double()
-    model.eval()
-    return model
+from config import MODEL_NAME
 
 
-def create_pytorch_feature_extractor(xai_name):
-    model = create_pytorch_model()
-    sf = SavingFunction(xai_name)
-    return torch.nn.Sequential(sf, model)
+def __resnet50():
+    model = torchvision.models.resnet50(pretrained=True)
+    return model, model.avgpool
 
 
-def create_feature_extractor_model():
-    classifier, preprocess_input = Classifiers.get(MODEL_NAME)
-    model = classifier((224, 224, 3), weights='imagenet', include_top=False)
-
-    image_input = tf.keras.Input((224, 224, 3), batch_size=16, name="image")
-    image_input = preprocess_input(image_input)
-    model_output = model(image_input)
-    model_output = tf.keras.layers.GlobalAveragePooling2D()(model_output)
-
-    return tf.keras.models.Model(image_input, model_output)
-
-
-def create_adjusted_image_saving_model_for_xai(xai_name):
-    classifier, preprocess_input = Classifiers.get(MODEL_NAME)
-    model = classifier((224, 224, 3), weights='imagenet', include_top=True)
-
-    first_image_input = tf.keras.Input((224, 224, 3), batch_size=1, name="image")
-    image_input = SaveLayer(xai_name)(first_image_input)
-    image_input = preprocess_input(image_input)
-    model_output = model(image_input)
-
-    return tf.keras.models.Model(first_image_input, model_output)
+def __densenet121():
+    model = torchvision.models.densenet121(pretrained=True)
+    return model, model.features
 
 
 def create_model():
-    classifier, preprocess_input = Classifiers.get(MODEL_NAME)
-    model = classifier((224, 224, 3), weights='imagenet', include_top=True)
+    if MODEL_NAME == "resnet50":
+        model, features = __resnet50()
+    elif MODEL_NAME == "densenet121":
+        model, features = __densenet121()
+    else:
+        raise NotImplementedError(f"{MODEL_NAME} is not implemented")
 
-    first_image_input = tf.keras.Input((224, 224, 3), batch_size=1, name="image")
-    image_input = preprocess_input(first_image_input)
-    model_output = model(image_input)
-
-    return tf.keras.models.Model(first_image_input, model_output)
-
-
-class SaveLayer(tf.keras.layers.Layer):
-
-    def __init__(self, xai_model_name, trainable=False, name=None, dtype=None, dynamic=False, **kwargs):
-        self.xai_model_name = xai_model_name
-        super().__init__(trainable, name, dtype, dynamic, **kwargs)
-
-    def build(self, input_shape):
-        # tf.io.gfile.mkdir(self.xai_model_name)
-        self.counter = tf.Variable(0, dtype="int32")
-
-    def call(self, inputs, *args, **kwargs):
-        batch_image_input = inputs
-
-        def __save_each_image(image_input):
-            self.counter.count_up_to(tf.int32.max)
-            file_path = tf.strings.join(
-                [self.xai_model_name, tf.strings.as_string(self.counter), "jpg"], separator='.', name=None
-            )
-            int8_image = tf.cast(image_input, tf.uint8)
-            jpeg_encoded_input = tf.io.encode_jpeg(int8_image, quality=100)
-            write_op = tf.io.write_file(file_path, jpeg_encoded_input)
-            with tf.control_dependencies([write_op]):
-                return image_input
-
-        saved_image_inputs = tf.map_fn(__save_each_image, batch_image_input)
-        return batch_image_input
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])
+    return torch.nn.Sequential(normalize, model), features
 
 
-class SavingFunction(torch.nn.Module):
+def create_image_saving_model(xai_name):
+    input_image_saver = InputImageSavingModule(xai_name)
+    model, features = create_model()
+    return torch.nn.Sequential(input_image_saver, model)
+
+
+class InputImageSavingModule(torch.nn.Module):
     def __init__(self, xai_model_name):
-        super(SavingFunction, self).__init__()
+        super(InputImageSavingModule, self).__init__()
         self.counter = 0
         self.xai_model_name = xai_model_name
+        self.rule = IdentityRule()
 
     def forward(self, x):
         with torch.no_grad():
             for i in range(0, x.shape[0]):
                 self.counter += 1
-                torchvision.utils.save_image(x[i].permute(2, 0, 1) / 255, f"{self.xai_model_name}.{self.counter}.png")
+                torchvision.utils.save_image(x[i], f"{self.xai_model_name}.{self.counter}.png")
         return x
