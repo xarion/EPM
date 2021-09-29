@@ -25,9 +25,9 @@ def create_anime_dataset(n=1):
     # https://www.gwern.net/Danbooru2020#kaggle
     # make 224x224
     source = "/home/gabi/anime_dataset/danbooru2020/512px/250"
-    names = os.listdir(source)[:n]
     if n > 250:
         n = 250
+    names = os.listdir(source)[:n]
 
     for name in names:
         p = os.path.join(source, name)
