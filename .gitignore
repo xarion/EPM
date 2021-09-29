@@ -134,3 +134,5 @@ xai_methods/*/*.jpg
 models/*
 test/*.png
 visualization/scratch/
+visualization/white_noise_images
+visualization/danbooru2020
