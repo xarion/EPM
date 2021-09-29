@@ -1,5 +1,7 @@
 import onnx
 import tensorflow as tf
+import torch
+import torchvision
 from classification_models.tfkeras import Classifiers
 from onnx2pytorch import ConvertModel
 
@@ -12,6 +14,12 @@ def create_pytorch_model():
     model = model.double()
     model.eval()
     return model
+
+
+def create_pytorch_feature_extractor(xai_name):
+    model = create_pytorch_model()
+    sf = SavingFunction(xai_name)
+    return torch.nn.Sequential(sf, model)
 
 
 def create_feature_extractor_model():
@@ -68,10 +76,24 @@ class SaveLayer(tf.keras.layers.Layer):
                 [self.xai_model_name, tf.strings.as_string(self.counter), "jpg"], separator='.', name=None
             )
             int8_image = tf.cast(image_input, tf.uint8)
-            jpeg_encoded_input = tf.io.encode_jpeg(int8_image)
+            jpeg_encoded_input = tf.io.encode_jpeg(int8_image, quality=100)
             write_op = tf.io.write_file(file_path, jpeg_encoded_input)
             with tf.control_dependencies([write_op]):
                 return image_input
 
         saved_image_inputs = tf.map_fn(__save_each_image, batch_image_input)
         return batch_image_input
+
+
+class SavingFunction(torch.nn.Module):
+    def __init__(self, xai_model_name):
+        super(SavingFunction, self).__init__()
+        self.counter = 0
+        self.xai_model_name = xai_model_name
+
+    def forward(self, x):
+        with torch.no_grad():
+            for i in range(0, x.shape[0]):
+                self.counter += 1
+                torchvision.utils.save_image(x[i].permute(2, 0, 1) / 255, f"{self.xai_model_name}.{self.counter}.png")
+        return x
