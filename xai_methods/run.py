@@ -1,4 +1,4 @@
-from xai_methods import anchor, feature_permutation, kernelshap, lime, occlusion, shapley_value_sampling
+from xai_methods import anchor_lime, feature_permutation, kernelshap, lime, occlusion, shapley_value_sampling
 
 
 def main():
@@ -7,4 +7,8 @@ def main():
     lime.run()
     occlusion.run()
     shapley_value_sampling.run()
-    anchor.run()
+    anchor_lime.run()
+
+
+if __name__ == "__main__":
+    main()

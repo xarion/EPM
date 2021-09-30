@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchvision
 
-from config import MODEL_NAME, IMAGE_MEAN, IMAGE_STD
+from config import MODEL_NAME, IMAGE_MEAN, IMAGE_STD, USE_CUDA
 
 
 def __resnet50():
@@ -22,7 +22,8 @@ def create_model():
         model, features = __densenet121()
     else:
         raise NotImplementedError(f"{MODEL_NAME} is not implemented")
-
+    if USE_CUDA:
+        model.cuda()
     return model, features
 
 

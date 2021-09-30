@@ -2,7 +2,7 @@ from captum._utils.models import SkLearnLinearRegression
 from captum.attr._core.lime import get_exp_kernel_similarity_function, Lime
 from torch.utils.data import DataLoader
 
-from config import IMAGE_CLASS
+from config import IMAGE_CLASS, USE_CUDA
 from dataset import get_validation_dataset
 from models import create_model, EncodingSavingHook
 def main():
@@ -16,6 +16,8 @@ def main():
     exp_eucl_distance = get_exp_kernel_similarity_function('euclidean', kernel_width=1000)
 
     for i, (images, labels) in enumerate(iter(dl)):
+        if USE_CUDA:
+            images = images.cuda()
         lr_lime = Lime(
             model,
             interpretable_model=SkLearnLinearRegression(),  # build-in wrapped sklearn Linear Regression

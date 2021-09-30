@@ -1,7 +1,7 @@
 from captum.attr import KernelShap
 from torch.utils.data import DataLoader
 
-from config import IMAGE_CLASS
+from config import IMAGE_CLASS, USE_CUDA
 from dataset import get_validation_dataset
 from models import create_model, EncodingSavingHook
 
@@ -14,9 +14,11 @@ def main():
     encoding_saving_hook = EncodingSavingHook(xai_method_name)
     model, features = create_model()
     features.register_forward_hook(encoding_saving_hook.hook)
-    shap = KernelShap(model)
 
     for i, (images, labels) in enumerate(iter(dl)):
+        if USE_CUDA:
+            images = images.cuda()
+        shap = KernelShap(model)
         attributions = shap.attribute(images, target=IMAGE_CLASS, n_samples=100, show_progress=True)
 
     encoding_saving_hook.save_encodings()
