@@ -311,7 +311,6 @@ def simple_kde_plot():
             else:
                 ax.set_xlabel("Normalized Mahalanobis distance")
 
-
             ax.get_yaxis().set_ticks([])
 
 
