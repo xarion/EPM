@@ -55,7 +55,7 @@ class EncodingSavingHook:
         self.counter = 0
 
     def hook(self, module, input_, output):
-        encodings = output.detach().numpy().copy()
+        encodings = output.detach().cpu().numpy().copy()
         if self.encoding_store is None:
             self.encoding_store = encodings
         else:
@@ -66,4 +66,4 @@ class EncodingSavingHook:
             self.save_encodings()
 
     def save_encodings(self):
-        np.save(f"{self.xai_model_name}.npy", self.encoding_store)
+        np.save(f"{MODEL_NAME}_{self.xai_model_name}.npy", self.encoding_store)
