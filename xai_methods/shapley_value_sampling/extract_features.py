@@ -9,7 +9,7 @@ from models import create_model, EncodingSavingHook
 def main():
     xai_method_name = "ShapleyValueSampling"
     ds = get_validation_dataset()
-    dl = DataLoader(ds, batch_size=1)
+    dl = DataLoader(ds, batch_size=50, num_workers=16)
 
     encoding_saving_hook = EncodingSavingHook(xai_method_name)
     model, features = create_model()
@@ -19,7 +19,7 @@ def main():
         if USE_CUDA:
             images = images.cuda()
         shapley_value_sampling = ShapleyValueSampling(model)
-        attributions = shapley_value_sampling.attribute(images, target=IMAGE_CLASS, n_samples=100, show_progress=True)
+        shapley_value_sampling.attribute(images, target=IMAGE_CLASS, n_samples=1, show_progress=True)
 
     encoding_saving_hook.save_encodings()
 

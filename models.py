@@ -24,7 +24,9 @@ def create_model():
         raise NotImplementedError(f"{MODEL_NAME} is not implemented")
     if USE_CUDA:
         model.cuda()
-    return model, features
+    model.eval()
+    softmax = torch.nn.Softmax(dim=1)
+    return torch.nn.Sequential(model, softmax), features
 
 
 def create_image_saving_model(xai_name):
@@ -50,21 +52,21 @@ class InputImageSavingHook:
 
 
 class EncodingSavingHook:
-    def __init__(self, xai_model_name):
-        self.encoding_store = None
-        self.xai_model_name = xai_model_name
+    def __init__(self, name):
+        self.encoding_store = []
+        self.name = name
         self.counter = 0
 
     def hook(self, module, input_, output):
-        encodings = output.detach().cpu().numpy().copy()
-        if self.encoding_store is None:
-            self.encoding_store = encodings
-        else:
-            self.encoding_store = np.concatenate([self.encoding_store, encodings], axis=0)
-        self.counter += 1
-
-        if (self.counter % 1000) == 0:
-            self.save_encodings()
+        self.encoding_store.append(output.detach().cpu().numpy().copy())
+        # if self.encoding_store is None:
+        #     self.encoding_store = encodings
+        # else:
+        #     self.encoding_store = np.concatenate([self.encoding_store, encodings], axis=0)
+        # self.counter += 1
+        #
+        # if (self.counter % 1000) == 0:
+        #     self.save_encodings()
 
     def save_encodings(self):
-        np.save(f"{MODEL_NAME}_{self.xai_model_name}.npy", self.encoding_store)
+        np.save(f"{MODEL_NAME}_{self.name}.npy", np.concatenate(self.encoding_store, axis=0))

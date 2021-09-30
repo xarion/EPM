@@ -20,8 +20,8 @@ def main():
             images = images.cuda()
         occlusion = Occlusion(model)
         attributions = occlusion.attribute(images, target=IMAGE_CLASS,
-                                           sliding_window_shapes=(3, 22, 22),
-                                           strides=(0, 11, 11),
+                                           sliding_window_shapes=(3, 6, 6),
+                                           strides=(3, 3, 3),
                                            show_progress=True)
 
         # default_cmap = LinearSegmentedColormap.from_list('custom blue',

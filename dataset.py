@@ -7,8 +7,8 @@ from config import IMAGE_CLASS, IMAGE_STD, IMAGE_MEAN
 
 
 def get_validation_dataset():
-    transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), Normalize(mean=IMAGE_MEAN,
-                                                                                     std=IMAGE_STD)])
+    transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.Resize(64), T.ToTensor(), Normalize(mean=IMAGE_MEAN,
+                                                                                                   std=IMAGE_STD)])
     ds = datasets.ImageNet("~/tensorflow_datasets/downloads/manual/", split="val", transform=transform)
 
     classes = torch.tensor([IMAGE_CLASS])

@@ -9,7 +9,7 @@ from models import create_model, EncodingSavingHook
 def main():
     xai_method_name = "KernelShap"
     ds = get_validation_dataset()
-    dl = DataLoader(ds, batch_size=1)
+    dl = DataLoader(ds, batch_size=1, pin_memory=True)
 
     encoding_saving_hook = EncodingSavingHook(xai_method_name)
     model, features = create_model()

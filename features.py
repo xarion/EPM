@@ -5,40 +5,30 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms as T
+from torchvision.transforms import Normalize
 
-from config import IMAGE_CLASS
-from models import create_model
+from config import IMAGE_CLASS, USE_CUDA, IMAGE_MEAN, IMAGE_STD
+from models import create_model, EncodingSavingHook
 
 
-def features(dataset):
-    feature_outputs = None
+def save_features(dataset, name):
+    encoding_saving_hook = EncodingSavingHook(name)
+    model, features = create_model()
+    features.register_forward_hook(encoding_saving_hook.hook)
 
-    def _get_feature_outputs():
-        def _hook(_module, _input, _output):
-            nonlocal feature_outputs
-            feature_outputs = _output.detach()
+    dataloader = DataLoader(dataset, batch_size=16, pin_memory=True)
 
-        return _hook
-
-    model, feature_layer = create_model()
-    feature_layer.register_forward_hook(_get_feature_outputs())
-    features = []
-    dl = DataLoader(dataset, batch_size=32, num_workers=16)
-
-    for images, labels in iter(dl):
+    for i, (images, labels) in enumerate(iter(dataloader)):
+        if USE_CUDA:
+            images = images.cuda()
         model(images)
-        features.append(feature_outputs.detach().numpy())
-
-    return np.squeeze(np.concatenate(features, axis=0))
+    encoding_saving_hook.save_encodings()
 
 
-def features_from_modified_inputs(xai_method):
-    dataset = PerturbedImagesDataset('./')
-
-    extracted_features = features(dataset)
-
-    np.save(f"{xai_method}.npy", extracted_features)
-    return extracted_features
+def save_features_from_folder(xai_method, folder="./"):
+    dataset = PerturbedImagesDataset(folder)
+    save_features(dataset, xai_method)
 
 
 class PerturbedImagesDataset(Dataset):
@@ -47,6 +37,9 @@ class PerturbedImagesDataset(Dataset):
     def __init__(self, root_dir):
         self.root_dir = root_dir
         self.files_list = np.array([f for f in glob("*.jpg") if ".1." not in f])
+        super(PerturbedImagesDataset).__init__(transform=T.Compose(
+            [T.Resize(256), T.CenterCrop(224), T.Resize(64), T.ToTensor(), Normalize(mean=IMAGE_MEAN,
+                                                                                     std=IMAGE_STD)]))
 
     def __len__(self):
         return len(self.files_list)
