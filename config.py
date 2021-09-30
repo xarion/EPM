@@ -1,4 +1,4 @@
-MODEL_NAME = "resnet50"
+MODEL_NAME = "densenet121"
 tennis_ball = 852
 IMAGE_CLASS = tennis_ball
 
