@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchvision
 
-from config import MODEL_NAME, IMAGE_MEAN, IMAGE_STD
+from config import MODEL_NAME, IMAGE_MEAN, IMAGE_STD, USE_CUDA
 
 
 def __resnet50():
@@ -22,7 +22,8 @@ def create_model():
         model, features = __densenet121()
     else:
         raise NotImplementedError(f"{MODEL_NAME} is not implemented")
-
+    if USE_CUDA:
+        model.cuda()
     return model, features
 
 
@@ -55,7 +56,7 @@ class EncodingSavingHook:
         self.counter = 0
 
     def hook(self, module, input_, output):
-        encodings = output.detach().numpy().copy()
+        encodings = output.detach().cpu().numpy().copy()
         if self.encoding_store is None:
             self.encoding_store = encodings
         else:
@@ -66,4 +67,4 @@ class EncodingSavingHook:
             self.save_encodings()
 
     def save_encodings(self):
-        np.save(f"{self.xai_model_name}.npy", self.encoding_store)
+        np.save(f"{MODEL_NAME}_{self.xai_model_name}.npy", self.encoding_store)
