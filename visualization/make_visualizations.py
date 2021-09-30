@@ -252,7 +252,6 @@ def simple_kde_plot():
         facet_grid.savefig("testing2.png")
 
     elif option == 3:
-
         train_encodings, train_distances = viz_utils.get_id_data("/home/gabi/PycharmProjects/EPM/resnet50_train_features.npy")
         val_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy", train_encodings)
         # lime_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/xai_methods/lime", train_encodings)
@@ -284,7 +283,7 @@ def simple_kde_plot():
         # dfs = [df_train, df_val, df_anchor, df_lime, df_wn]
         dfs = [df_train, df_val, df_wn, df_anime]
 
-        fig, axs = plt.subplots(nrows=len(dfs), ncols=1, figsize=(7, 7))
+        fig, axs = plt.subplots(nrows=len(dfs), ncols=1, figsize=(7,3))
 
         # labels = ["train (250)", "val (50)", "anchor (2)", "lime (2)", "white noise (250)"]
         labels = ["train (250)", "val (50)", "white noise (250)", "anime (250)"]
@@ -293,14 +292,15 @@ def simple_kde_plot():
             sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=0.5, fill=True, alpha=1, linewidth=1) #), log_scale=(True, False))
 
             ax.get_legend().remove()
-            ax.grid(True, color='b', linestyle='-', linewidth=0.1, which="major")
+            ax.grid(True, color="steelblue", linestyle='--', linewidth=0.5, which="major", alpha=0.4)
 
-            ax.set_ylabel(labels[i])
+            ax.set_ylabel(labels[i], rotation=0, labelpad=5, ha="right", va="top", size=9, color="steelblue",
+                          family="sans-serif", weight="bold")
 
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             ax.spines['left'].set_visible(False)
-            ax.spines['bottom'].set_color("b")
+            ax.spines['bottom'].set_color("steelblue")
             if i < len(labels)-1:
                 for tick in ax.xaxis.get_major_ticks():
                     tick.tick1line.set_visible(False)
@@ -309,13 +309,15 @@ def simple_kde_plot():
                     tick.label2.set_visible(False)
 
             else:
-                ax.set_xlabel("Normalized Mahalanobis distance")
+                ax.set_xlabel("Normalized Mahalanobis distance", size=10, color="black", family="sans-serif", weight="normal")
+                ax.set_xticklabels([0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=10, color="black", family="sans-serif", weight="normal")
 
             ax.get_yaxis().set_ticks([])
 
 
         xlim = (0, 1)
         plt.setp(axs, xlim=xlim)
+        plt.tight_layout()
 
 
         plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/scratch/testing4.png")
