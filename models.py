@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torchvision
 
@@ -32,6 +33,7 @@ def create_image_saving_model(xai_name):
     return model
 
 
+
 class InputImageSavingHook:
     def __init__(self, xai_model_name):
         self.counter = 0
@@ -44,3 +46,24 @@ class InputImageSavingHook:
             self.counter += 1
             unnormalized_input = input_[i].mul(tensor_image_std).add(tensor_image_mean)
             torchvision.utils.save_image(unnormalized_input[i], f"{self.xai_model_name}.{self.counter}.png")
+
+
+class EncodingSavingHook:
+    def __init__(self, xai_model_name):
+        self.encoding_store = None
+        self.xai_model_name = xai_model_name
+        self.counter = 0
+
+    def hook(self, module, input_, output):
+        encodings = output.detach().numpy().copy()
+        if self.encoding_store is None:
+            self.encoding_store = encodings
+        else:
+            self.encoding_store = np.concatenate([self.encoding_store, encodings], axis=0)
+        self.counter += 1
+
+        if (self.counter % 1000) == 0:
+            self.save_encodings()
+
+    def save_encodings(self):
+        np.save(f"{self.xai_model_name}.npy", self.encoding_store)
