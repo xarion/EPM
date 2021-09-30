@@ -137,3 +137,5 @@ test/*.png
 visualization/scratch/
 visualization/white_noise_images
 visualization/danbooru2020
+visualization/files_npy
+visualization/dataframes

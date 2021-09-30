@@ -91,13 +91,17 @@ def get_low_high(arrays):
     return min, max
 
 
-def get_id_data(path):
+def get_id_data(path, dnn_name):
     encodings = np.load(path)
+
+    if dnn_name == "densenet121":
+        encodings = np.mean(np.mean(encodings, axis=-1), axis=-1)
+
     distances = mahalanobis_distance(encodings, encodings)
     return encodings, distances
 
 
-def get_data_to_be_measured(path, id_encodings):
+def get_data_to_be_measured(path, id_encodings, dnn_name):
     # check if multiple files or not.
     # if multiple files, take average over the distances
     if os.path.isdir(path):
@@ -106,10 +110,14 @@ def get_data_to_be_measured(path, id_encodings):
         distances = []
         for i in npys:
             encoding = np.load(os.path.join(path, i))[1:]
+            if dnn_name == "densenet121":
+                encoding = np.mean(np.mean(encodings, axis=-1), axis=-1)
             distances.append(np.mean(mahalanobis_distance(id_encodings, encoding)))
         distances = np.array(distances)
     else:
         encodings = np.load(path)
+        if dnn_name == "densenet121":
+            encodings = np.mean(np.mean(encodings, axis=-1), axis=-1)
         distances = mahalanobis_distance(id_encodings, encodings)
 
     return distances
