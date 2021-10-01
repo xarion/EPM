@@ -36,7 +36,7 @@ class PerturbedImagesDataset(Dataset):
 
     def __init__(self, root_dir):
         self.root_dir = root_dir
-        self.files_list = np.array([f for f in glob("*.jpg")])
+        self.files_list = np.array([f for f in glob(root_dir + "/*.jpg")])
         super().__init__()
         self.transform = get_standard_image_transform()
 

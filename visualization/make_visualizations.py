@@ -7,6 +7,19 @@ import pandas as pd
 import seaborn as sns
 sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
 import os
+import shutil
+
+
+TRAINING = "training_features"
+VALIDATION = "validation_features"
+LIME = "Lime"
+ANCHOR = "AnchorLime"
+KERNELSHAP = "KernelShap"
+SHAPSAMP = "ShapleyValueSampling"
+FEATPERM = "FeaturePermutation"
+OCCLUSION = "Occlusion"
+WHITENOISE = "white_noise"
+ANIME = "anime"
 
 
 def create_dummy_data(n):
@@ -33,393 +46,115 @@ def create_gaussian_data():
     return data
 
 
-def create_density_plot(data, density_labels, name):
-
-    low, high = viz_utils.get_low_high(data)
-
-    normalized_data = []
-    for d in data:
-        normalized_data.append(viz_utils.normalize_array_between(d, low, high, 0, 1))
-
-    number_of_densities = len(data)
-
-    assert(number_of_densities == len(density_labels)), "The number of densities is not equal to the number of labels."
-
-    data_cat = np.concatenate(data)
-
-    density_labels_rep = np.repeat(density_labels, len(data[0]))
-
-    data_frame = pd.DataFrame(dict(x=data_cat, g=density_labels_rep))
-
-    palette = sns.cubehelix_palette(2*number_of_densities, rot=-.25, light=.7)
-    facet_grid = sns.FacetGrid(data_frame, row="g", hue="g", aspect=10, height=0.9, palette=palette)
-
-    # Draw the densities in a few steps
-    facet_grid.map(sns.kdeplot, "x", bw_adjust=.5, clip_on=False, fill=True, alpha=1, linewidth=1.5)
-    facet_grid.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
-
-    # passing color=None to refline() uses the hue mapping
-    facet_grid.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
-
-    def label(x, color, label):
-        ax = plt.gca()
-        ax.text(0, .2, label, fontweight="bold", color=color, ha="left", va="center", transform=ax.transAxes)
-
-
-    facet_grid.map(label, "x")
-    
-    # Set the subplots to overlap
-    facet_grid.figure.subplots_adjust(hspace=-.25)
-    
-    # Remove axes details that don't play well with overlap
-    facet_grid.set_titles("")
-    facet_grid.set(yticks=[], ylabel="", xlabel="Normalized Mahalanobis Distance")
-
-    facet_grid.despine(bottom=True, left=True)
-
-    viz_utils.save_figure(facet_grid, "%s.png" % name, "results")
-
-
-def create_density_plot_single(data, density_label):
-
-    data_frame = pd.DataFrame(dict(x=data, g=density_label))
-
-    palette = sns.cubehelix_palette(2, rot=-.25, light=.7)
-    facet_grid = sns.FacetGrid(data_frame, row="g", hue="g", aspect=10, height=0.9, palette=palette)
-
-    # Draw the densities in a few steps
-    facet_grid.map(sns.kdeplot, "x", bw_adjust=.5, clip_on=False, fill=True, alpha=1, linewidth=1.5)
-    facet_grid.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
-
-    # passing color=None to refline() uses the hue mapping
-    facet_grid.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
-
-    def label(x, color, label):
-        ax = plt.gca()
-        ax.text(0, .2, label, fontweight="bold", color=color, ha="left", va="center", transform=ax.transAxes)
-
-    facet_grid.map(label, "x")
-
-    # Set the subplots to overlap
-    facet_grid.figure.subplots_adjust(hspace=-.25)
-
-    # Remove axes details that don't play well with overlap
-    facet_grid.set_titles("")
-    facet_grid.set(yticks=[], ylabel="", xlabel="Normalized Mahalanobis Distance")
-
-    facet_grid.despine(bottom=True, left=True)
-    viz_utils.save_figure(facet_grid, "%s.png" % density_label, "results")
-
-
-def create_single_plots():
-    train_path = "/home/gabi/PycharmProjects/EPM/resnet50_train_features.npy"
-    train_encodings = read_data(train_path)
-
-    lime_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_0.npy"
-    lime_encodings_1 = read_data(lime_path_1)
-
-    lime_path_2 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_1.npy"
-    lime_encodings_2 = read_data(lime_path_2)
-
-    anchor_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/anchor/anchor_0.npy"
-    anchor_encodings_1 = read_data(anchor_path_1)
-
-    anchor_path_2 = "/home/gabi/PycharmProjects/EPM/xai_methods/anchor/anchor_1.npy"
-    anchor_encodings_2 = read_data(anchor_path_2)
-
-    val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
-    val_encodings = read_data(val_path)
-
-    distance_1 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_1)
-    distance_2 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_2)
-    distance_3 = viz_utils.mahalanobis_distance(train_encodings, anchor_encodings_1)
-    distance_4 = viz_utils.mahalanobis_distance(train_encodings, anchor_encodings_2)
-    distance_5 = viz_utils.mahalanobis_distance(train_encodings, val_encodings)
-    distance_6 = viz_utils.mahalanobis_distance(train_encodings, train_encodings)
-
-    low, high = viz_utils.get_low_high([distance_1, distance_2, distance_3, distance_4, distance_5])
-
-    distance_1 = viz_utils.normalize_array_between(distance_1, low, high, 0, 1)
-    distance_2 = viz_utils.normalize_array_between(distance_2, low, high, 0, 1)
-    distance_3 = viz_utils.normalize_array_between(distance_3, low, high, 0, 1)
-    distance_4 = viz_utils.normalize_array_between(distance_4, low, high, 0, 1)
-    distance_5 = viz_utils.normalize_array_between(distance_5, low, high, 0, 1)
-    distance_6 = viz_utils.normalize_array_between(distance_6, low, high, 0, 1)
-
-    create_density_plot_single(distance_1, "lime1")
-    create_density_plot_single(distance_2, "lime2")
-    create_density_plot_single(distance_3, "anchor1")
-    create_density_plot_single(distance_4, "anchor2")
-    create_density_plot_single(distance_6, "train")
-    create_density_plot_single(distance_5, "val")
-
-
-def create_joint_plot():
-    train_path = "/home/gabi/PycharmProjects/EPM/resnet50_train_features.npy"
-    train_encodings = read_data(train_path)
-
-    val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
-    val_encodings = read_data(val_path)
-
-    lime_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_0.npy"
-    lime_encodings_1 = read_data(lime_path_1)
-
-    lime_path_2 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_1.npy"
-    lime_encodings_2 = read_data(lime_path_2)
-
-    anchor_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/anchor/anchor_0.npy"
-    anchor_encodings_1 = read_data(anchor_path_1)
-
-    anchor_path_2 = "/home/gabi/PycharmProjects/EPM/xai_methods/anchor/anchor_1.npy"
-    anchor_encodings_2 = read_data(anchor_path_2)
-
-    distance_1 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_1)
-    distance_2 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_2)
-    distance_3 = viz_utils.mahalanobis_distance(train_encodings, anchor_encodings_1)
-    distance_4 = viz_utils.mahalanobis_distance(train_encodings, anchor_encodings_2)
-    distance_5 = viz_utils.mahalanobis_distance(train_encodings, val_encodings)
-    distance_6 = viz_utils.mahalanobis_distance(train_encodings, train_encodings)
-
-    data = [distance_6, distance_5, distance_1, distance_2, distance_3, distance_4]
-    labels = ["train", "val", "lime1", "lime2", "anchor1", "anchor2"]
-
-    create_density_plot(data, labels, "joint")
-
-
-def simple_kde_plot():
-    option = 3
-
-    if option == 1:
-        val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
-        val_encodings = read_data(val_path)
-        data = viz_utils.mahalanobis_distance(val_encodings, val_encodings)
-
-        df = pd.DataFrame(dict(x=data))
-        facet_grid = sns.FacetGrid(df, aspect=2.5, height=3)
-
-        facet_grid.map(sns.kdeplot, "x").set(xscale="log")
-        facet_grid.set(xlim=(40, 60))
-
-        facet_grid.savefig("testing.png")
-
-    elif option == 2:
-        train_path = "/home/gabi/PycharmProjects/EPM/resnet50_train_features.npy"
-        train_encodings = read_data(train_path)
-        train = viz_utils.mahalanobis_distance(train_encodings, train_encodings)
-
-        val_path = "/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy"
-        val_encodings = read_data(val_path)
-        val = viz_utils.mahalanobis_distance(train_encodings, val_encodings)
-
-        lime_path_1 = "/home/gabi/PycharmProjects/EPM/xai_methods/lime/lime_0.npy"
-        lime_encodings_1 = read_data(lime_path_1)
-        lime1 = viz_utils.mahalanobis_distance(train_encodings, lime_encodings_1)
-
-        data_cat = np.concatenate([train, val, lime1])
-        # print(viz_utils.get_low_high(data_cat))
-        labels_train = np.array(["train"]).repeat(len(train))
-        labels_val = np.array(["val"]).repeat(len(val))
-        labels_lime1 = np.array(["lime1"]).repeat(len(lime1))
-        labels = np.concatenate([labels_train, labels_val, labels_lime1])
-        df = pd.DataFrame(dict(x=data_cat, g=labels))
-
-        # facet_grid = sns.FacetGrid(df, aspect=2.5, height=3)
-        # palette = sns.cubehelix_palette(2, rot=-.25, light=.7)
-        facet_grid = sns.FacetGrid(df, row="g", hue="g", aspect=2, height=2.9)
-
-        # facet_grid.map(sns.kdeplot, "x").set(xscale="log")
-        facet_grid.map(sns.kdeplot, "x", bw_adjust=0.3, clip_on=False, fill=True, alpha=1, linewidth=0.1,
-                       log_scale=(True, False))
-        # facet_grid.map(sns.kdeplot, "x", clip_on=False, color="w", lw=1, bw_adjust=.5)
-        facet_grid.refline(y=0, linewidth=1, linestyle="-", color=None, clip_on=False)
-        # facet_grid.set(ylim=(0, 50))
-
-        def label(x, color, label):
-            ax = plt.gca()
-            ax.text(0, .2, label, color=color, ha="left", va="center", transform=ax.transAxes)
-
-        facet_grid.map(label, "x")
-
-
-        # Set the subplots to overlap
-        # facet_grid.figure.subplots_adjust(hspace=-.25)
-        # Remove axes details that don't play well with overlap
-        facet_grid.set_titles("")
-        facet_grid.set(yticks=[], ylabel="", xlabel="Mahalanobis Distance on Log Scale")
-
-        facet_grid.despine(bottom=True, left=True)
-        # facet_grid.fig.tight_layout()
-
-        facet_grid.savefig("testing2.png")
-
-    elif option == 3:
-        train_encodings, train_distances = viz_utils.get_id_data("/home/gabi/PycharmProjects/EPM/resnet50_train_features.npy")
-        val_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/resnet50_validation_features.npy", train_encodings)
-        # lime_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/xai_methods/lime", train_encodings)
-        # anchor_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/xai_methods/anchor", train_encodings)
-        wn_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/visualization/white_noise_images/white_noise.npy", train_encodings)
-        anime_distances = viz_utils.get_data_to_be_measured("/home/gabi/PycharmProjects/EPM/visualization/danbooru2020/anime.npy", train_encodings)
-        
-
-        # all_distances = [train_distances, val_distances, lime_distances, anchor_distances, wn_distances]
-        all_distances = [train_distances, val_distances, wn_distances, anime_distances]
-
-        low, high = viz_utils.get_low_high(all_distances)
-
-        train_distances = viz_utils.normalize_array_between(train_distances, low, high, 0, 1)
-        val_distances = viz_utils.normalize_array_between(val_distances, low, high, 0, 1)
-        # lime_distances = viz_utils.normalize_array_between(lime_distances, low, high, 0, 1)
-        # anchor_distances = viz_utils.normalize_array_between(anchor_distances, low, high, 0, 1)
-        wn_distances = viz_utils.normalize_array_between(wn_distances, low, high, 0, 1)
-        anime_distances = viz_utils.normalize_array_between(anime_distances, low, high, 0, 1)
-
-        df_train = pd.DataFrame(dict(x=train_distances))
-        df_val = pd.DataFrame(dict(x=val_distances))
-        # df_lime = pd.DataFrame(dict(x=lime_distances))
-        # df_anchor = pd.DataFrame(dict(x=anchor_distances))
-        df_wn = pd.DataFrame(dict(x=wn_distances))
-        df_anime = pd.DataFrame(dict(x=anime_distances))
-
-
-        # dfs = [df_train, df_val, df_anchor, df_lime, df_wn]
-        dfs = [df_train, df_val, df_wn, df_anime]
-
-        fig, axs = plt.subplots(nrows=len(dfs), ncols=1, figsize=(7,3))
-
-        # labels = ["train (250)", "val (50)", "anchor (2)", "lime (2)", "white noise (250)"]
-        labels = ["train (250)", "val (50)", "white noise (250)", "anime (250)"]
-
-        for i, ax in enumerate(axs):
-            sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=0.5, fill=True, alpha=1, linewidth=1) #), log_scale=(True, False))
-
-            ax.get_legend().remove()
-            ax.grid(True, color="steelblue", linestyle='--', linewidth=0.5, which="major", alpha=0.4)
-
-            ax.set_ylabel(labels[i], rotation=0, labelpad=5, ha="right", va="top", size=9, color="steelblue",
-                          family="sans-serif", weight="bold")
-
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            ax.spines['bottom'].set_color("steelblue")
-            if i < len(labels)-1:
-                for tick in ax.xaxis.get_major_ticks():
-                    tick.tick1line.set_visible(False)
-                    tick.tick2line.set_visible(False)
-                    tick.label1.set_visible(False)
-                    tick.label2.set_visible(False)
-
+def npy_path(dnn_name, the_class, xai_method):
+    base_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/files_npy/", the_class)
+    path = os.path.join(base_path, "%s_%s.npy" % (dnn_name, xai_method))
+    return path
+
+
+
+def prepare_data_unnormalized_dataframes(dnn_name, xai_method, the_class, train_encodings):
+    print(dnn_name, xai_method)
+
+    if xai_method == WHITENOISE:
+        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/white_noise_images", "%s_%s.pkl" % (dnn_name, WHITENOISE))
+        if not os.path.exists(df_path):
+            source_npy = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/white_noise_images", "%s_%s.npy" % (dnn_name, WHITENOISE))
+            if os.path.exists(source_npy):
+                distances = viz_utils.get_data_to_be_measured(source_npy, train_encodings, dnn_name)
+                df = pd.DataFrame(dict(x=distances))
+                df.to_pickle(df_path)
             else:
-                ax.set_xlabel("Normalized Mahalanobis distance", size=10, color="black", family="sans-serif", weight="normal")
-                ax.set_xticklabels([0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=10, color="black", family="sans-serif", weight="normal")
+                print("%s does not exist" % source_npy)
+                return None
+        else:
+            df = pd.read_pickle(df_path)
+            
+    elif xai_method == ANIME:
+        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/danbooru2020", "%s_%s.pkl" % (dnn_name, ANIME))
+        if not os.path.exists(df_path):
+            source_npy = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/danbooru2020", "%s_%s.npy" % (dnn_name, ANIME))
+            if os.path.exists(source_npy):
+                distances = viz_utils.get_data_to_be_measured(source_npy, train_encodings, dnn_name)
+                df = pd.DataFrame(dict(x=distances))
+                df.to_pickle(df_path)
+            else:
+                print("%s does not exist" % source_npy)
+                return None
+        else:
+            df = pd.read_pickle(df_path)
+            
+    else:
+        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", the_class, dnn_name+"_unnormalized")
+        pkl_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", the_class, dnn_name+"_unnormalized",
+                                "%s.pkl" % xai_method)
 
-            ax.get_yaxis().set_ticks([])
+        if not os.path.exists(df_path):
+            print("path does not exist: %s, creating" % df_path)
+            os.makedirs(df_path)
+
+        if not os.path.exists(pkl_path):
+            source_npy = npy_path(dnn_name, the_class, xai_method)
+            if os.path.exists(source_npy):
+                distances = viz_utils.get_data_to_be_measured(source_npy, train_encodings, dnn_name)
+
+                df = pd.DataFrame(dict(x=distances))
+                df.to_pickle(os.path.join(df_path, "%s.pkl" % xai_method))
+            else:
+                print("%s does not exist" % source_npy)
+                return None
+
+        else:
+            df = pd.read_pickle(os.path.join(df_path, "%s.pkl" % xai_method))
+
+    return df
 
 
-        xlim = (0, 1)
-        plt.setp(axs, xlim=xlim)
-        plt.tight_layout()
+def create_paper_plots(dnn_name, the_class, normalize=True):
 
 
-        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/scratch/testing4.png")
+    if dnn_name in ["densenet121", "resnet50"]:
+        train_encodings = None
+        df_train = prepare_data_unnormalized_dataframes(dnn_name, TRAINING, the_class, train_encodings)
+    else:
+        train_encodings, train_distances = viz_utils.get_id_data(npy_path(dnn_name, the_class, TRAINING), dnn_name)
+        df_train = pd.DataFrame(dict(x=train_distances))
 
+    df_val = prepare_data_unnormalized_dataframes(dnn_name, VALIDATION, the_class, train_encodings)
+    df_lime = prepare_data_unnormalized_dataframes(dnn_name, LIME, the_class, train_encodings)
+    df_anchor = prepare_data_unnormalized_dataframes(dnn_name, ANCHOR, the_class, train_encodings)
+    df_kernelshap = prepare_data_unnormalized_dataframes(dnn_name, KERNELSHAP, the_class, train_encodings)
+    df_shapsamp = prepare_data_unnormalized_dataframes(dnn_name, SHAPSAMP, the_class, train_encodings)
+    df_featperm = prepare_data_unnormalized_dataframes(dnn_name, FEATPERM, the_class, train_encodings)
+    df_occlusion = prepare_data_unnormalized_dataframes(dnn_name, OCCLUSION, the_class, train_encodings)
+    df_whitenoise = prepare_data_unnormalized_dataframes(dnn_name, WHITENOISE, the_class, train_encodings)
+    df_anime = prepare_data_unnormalized_dataframes(dnn_name, ANIME, the_class, train_encodings)
 
-def create_paper_plots(dnn_name, n, normalize=True):
-    # n is the number of distributions that we have
+    all_distances = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion,
+                     df_whitenoise, df_anime]
+
+    low, high = viz_utils.get_low_high(all_distances)
 
     if normalize:
-        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", dnn_name+"_normalized")
-    else:
-        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", dnn_name+"_unnormalized")
 
-    print(df_path)
-    
-    training = "training_features"
-    validation = "validation_features"
-    lime = "Lime"
-    anchor = "AnchorLime"
-    kernelshap = "KernelShap"
-    shapsamp = "ShapleyValueSampling"
-    featperm = "FeaturePermutation"
-    occlusion = "Occlusion"
+        df_train = viz_utils.normalize_array_between(df_train, low, high, 0, 1)
+        df_val = viz_utils.normalize_array_between(df_val, low, high, 0, 1)
+        df_lime = viz_utils.normalize_array_between(df_lime, low, high, 0, 1)
+        df_anchor = viz_utils.normalize_array_between(df_anchor, low, high, 0, 1)
+        df_kernelshap = viz_utils.normalize_array_between(df_kernelshap, low, high, 0, 1)
+        df_shapsamp = viz_utils.normalize_array_between(df_shapsamp, low, high, 0, 1)
+        df_featperm = viz_utils.normalize_array_between(df_featperm, low, high, 0, 1)
+        df_occlusion = viz_utils.normalize_array_between(df_occlusion, low, high, 0, 1)
+        df_whitenoise = viz_utils.normalize_array_between(df_whitenoise, low, high, 0, 1)
+        df_anime = viz_utils.normalize_array_between(df_anime, low, high, 0, 1)
 
-    if not os.path.exists(df_path):
-        print("path does not exist: %s, creating" % df_path)
-        os.mkdir(df_path)
-    
-    if len(os.listdir(df_path)) != n:
-    
-        def npy_path(distribution):
-            base_path = "/home/gabi/PycharmProjects/EPM/visualization/files_npy/"
-            path = os.path.join(base_path, "%s_%s.npy" % (dnn_name, distribution))
-            return path
-    
-        train_encodings, train_distances = viz_utils.get_id_data(npy_path(training), dnn_name)
-        print(training)
-        val_distances = viz_utils.get_data_to_be_measured(npy_path(validation), train_encodings, dnn_name)
-        print(validation)
-        lime_distances = viz_utils.get_data_to_be_measured(npy_path(lime), train_encodings, dnn_name)
-        print(lime)
-        anchor_distances = viz_utils.get_data_to_be_measured(npy_path(anchor), train_encodings, dnn_name)
-        print(anchor)
-        kernelshap_distances = viz_utils.get_data_to_be_measured(npy_path(kernelshap), train_encodings, dnn_name)
-        print(kernelshap)
-        shapsamp_distances = viz_utils.get_data_to_be_measured(npy_path(shapsamp), train_encodings, dnn_name)
-        print(shapsamp)
-        featperm_distances = viz_utils.get_data_to_be_measured(npy_path(featperm), train_encodings, dnn_name)
-        print(featperm)
-        occlusion_distances = viz_utils.get_data_to_be_measured(npy_path(occlusion), train_encodings, dnn_name)
-        print(occlusion)
-    
-        all_distances = [train_distances, val_distances, lime_distances, anchor_distances, kernelshap_distances, shapsamp_distances,
-                         featperm_distances, occlusion_distances]
-
-        if normalize:
-            low, high = viz_utils.get_low_high(all_distances)
-
-            train_distances = viz_utils.normalize_array_between(train_distances, low, high, 0, 1)
-            val_distances = viz_utils.normalize_array_between(val_distances, low, high, 0, 1)
-            lime_distances = viz_utils.normalize_array_between(lime_distances, low, high, 0, 1)
-            anchor_distances = viz_utils.normalize_array_between(anchor_distances, low, high, 0, 1)
-            kernelshap_distances = viz_utils.normalize_array_between(kernelshap_distances, low, high, 0, 1)
-            shapsamp_distances = viz_utils.normalize_array_between(shapsamp_distances, low, high, 0, 1)
-            featperm_distances = viz_utils.normalize_array_between(featperm_distances, low, high, 0, 1)
-            occlusion_distances = viz_utils.normalize_array_between(occlusion_distances, low, high, 0, 1)
-
-        df_train = pd.DataFrame(dict(x=train_distances))
-        df_val = pd.DataFrame(dict(x=val_distances))
-        df_lime = pd.DataFrame(dict(x=lime_distances))
-        df_anchor = pd.DataFrame(dict(x=anchor_distances))
-        df_kernelshap = pd.DataFrame(dict(x=kernelshap_distances))
-        df_shapsamp = pd.DataFrame(dict(x=shapsamp_distances))
-        df_featperm = pd.DataFrame(dict(x=featperm_distances))
-        df_occlusion = pd.DataFrame(dict(x=occlusion_distances))
-        
-        df_train.to_pickle(os.path.join(df_path, "%s.pkl" % training))
-        df_val.to_pickle(os.path.join(df_path, "%s.pkl" % validation))
-        df_lime.to_pickle(os.path.join(df_path, "%s.pkl" % lime))
-        df_anchor   .to_pickle(os.path.join(df_path, "%s.pkl" % anchor))
-        df_kernelshap.to_pickle(os.path.join(df_path, "%s.pkl" % kernelshap))
-        df_shapsamp.to_pickle(os.path.join(df_path, "%s.pkl" % shapsamp))
-        df_featperm.to_pickle(os.path.join(df_path, "%s.pkl" % featperm))
-        df_occlusion.to_pickle(os.path.join(df_path, "%s.pkl" % occlusion))
-
-    else:
-        df_train = pd.read_pickle(os.path.join(df_path, "%s.pkl" % training))
-        df_val = pd.read_pickle(os.path.join(df_path, "%s.pkl" % validation))
-        df_lime = pd.read_pickle(os.path.join(df_path, "%s.pkl" % lime))
-        df_anchor = pd.read_pickle(os.path.join(df_path, "%s.pkl" % anchor))
-        df_kernelshap = pd.read_pickle(os.path.join(df_path, "%s.pkl" % kernelshap))
-        df_shapsamp = pd.read_pickle(os.path.join(df_path, "%s.pkl" % shapsamp))
-        df_featperm = pd.read_pickle(os.path.join(df_path, "%s.pkl" % featperm))
-        df_occlusion = pd.read_pickle(os.path.join(df_path, "%s.pkl" % occlusion))
-        
-
-    dfs = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion]
+    dfs = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion,
+           df_whitenoise, df_anime]
 
     fig, axs = plt.subplots(nrows=len(dfs), ncols=1, figsize=(7,7))
 
-    labels = ["train (250)", "val (50)", "LIME", "anchor LIME", "kernel SHAP", "SHAP val. sampl.", "feature perm.", "occlusion"]
+    labels = ["train", "val", "LIME", "anchor LIME", "kernel SHAP", "SHAP val. sampl.", "feature perm.", "occlusion",
+              "white noise", "anime"]
 
     bw = 0.3
     for i, ax in enumerate(axs):
@@ -444,8 +179,9 @@ def create_paper_plots(dnn_name, n, normalize=True):
                 tick.label2.set_visible(False)
 
         else:
-            ax.set_xlabel("Normalized Mahalanobis distance", size=10, color="black", family="sans-serif", weight="normal")
+            ax.set_xlabel("Mahalanobis distance %s" % dnn_name, size=10, color="black", family="sans-serif", weight="normal")
             if normalize:
+                ax.set_xlabel("Normalized Mahalanobis distance %s" % dnn_name, size=10, color="black", family="sans-serif", weight="normal")
                 ax.set_xticklabels([0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=10, color="black", family="sans-serif", weight="normal")
 
         # ax.get_yaxis().set_ticks([])
@@ -454,9 +190,10 @@ def create_paper_plots(dnn_name, n, normalize=True):
         xlim = (0, 1)
 
     else:
-        xlim = (0, 200000)
-        ylim = (0, 4e-5)
-        plt.setp(axs, ylim=ylim)
+        xlim = (0, high)
+
+        # ylim = (0, 7e-5)
+        # plt.setp(axs, ylim=ylim)
 
     plt.setp(axs, xlim=xlim)
 
@@ -464,9 +201,9 @@ def create_paper_plots(dnn_name, n, normalize=True):
     plt.tight_layout()
 
     if normalize:
-        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/kde_plot_%f_normalized.png" % bw)
+        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s_normalized.png" % dnn_name)
     else:
-        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/kde_plot_%f_unnormalized_yaxison_2.png" % bw)
+        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s_unnormalized.png" % dnn_name)
 
 
-create_paper_plots("densenet121", n=8, normalize=False)
+create_paper_plots("mnasnet1.0", "tennisball", normalize=False)
