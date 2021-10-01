@@ -39,31 +39,6 @@ def is_positive_semi_definite(matrix):
         return False
 
 
-# unused
-def mahalanobis_distance_old(in_distribution_data, distribution_to_measure):
-    id_mu = in_distribution_data[1]
-    id_cov_mat = in_distribution_data[2]
-    id_cov_mat_inv = np.linalg.inv(id_cov_mat)
-
-    # check if covariance matrix is positive semi-definite
-    # is_pd = viz_utils.is_positive_semi_definite(id_cov_mat)
-    is_pd = True
-    if is_pd:
-        distances = []
-
-        for i in range(distribution_to_measure[0].shape[0]):
-            x = distribution_to_measure[0][i]
-            d_m = mahalanobis(x, id_mu, id_cov_mat_inv)
-            if np.isnan(d_m):
-                print("here")
-
-            distances.append(d_m)
-
-        return np.array(distances)
-    else:
-        return None
-
-
 # Erdi's method to get the covariance matrix to be PSD
 def mahalanobis_distance(id_data, distribution_to_measure):
     # normalize data such that covarience matrix is PSD
@@ -81,6 +56,12 @@ def mahalanobis_distance(id_data, distribution_to_measure):
 
 
 def get_low_high(arrays):
+    if isinstance(arrays[0], pd.DataFrame):
+        new_arrays = []
+        for arr in arrays:
+            new_arrays.append(np.squeeze(arr.to_numpy()))
+        arrays = new_arrays
+
     min = np.infty
     max = -np.infty
     for arr in arrays:
@@ -88,6 +69,7 @@ def get_low_high(arrays):
             min = arr.min()
         if arr.max() > max:
             max = arr.max()
+
     return min, max
 
 
@@ -96,12 +78,15 @@ def get_id_data(path, dnn_name):
 
     if dnn_name == "densenet121":
         encodings = np.mean(np.mean(encodings, axis=-1), axis=-1)
+    elif dnn_name == "resnet50":
+        encodings = np.squeeze(encodings)
 
     distances = mahalanobis_distance(encodings, encodings)
     return encodings, distances
 
 
 def get_data_to_be_measured(path, id_encodings, dnn_name):
+    assert(dnn_name in ["densenet121", "resnet50"])
     # check if multiple files or not.
     # if multiple files, take average over the distances
     if os.path.isdir(path):
@@ -111,13 +96,17 @@ def get_data_to_be_measured(path, id_encodings, dnn_name):
         for i in npys:
             encoding = np.load(os.path.join(path, i))[1:]
             if dnn_name == "densenet121":
-                encoding = np.mean(np.mean(encodings, axis=-1), axis=-1)
+                encoding = np.mean(np.mean(encoding, axis=-1), axis=-1)
+            elif dnn_name == "resnet50":
+                encoding = np.squeeze(encoding)
             distances.append(np.mean(mahalanobis_distance(id_encodings, encoding)))
         distances = np.array(distances)
     else:
-        encodings = np.load(path)
+        encoding = np.load(path)
         if dnn_name == "densenet121":
-            encodings = np.mean(np.mean(encodings, axis=-1), axis=-1)
-        distances = mahalanobis_distance(id_encodings, encodings)
+            encoding = np.mean(np.mean(encoding, axis=-1), axis=-1)
+        elif dnn_name == "resnet50":
+            encoding = np.squeeze(encoding)
+        distances = mahalanobis_distance(id_encodings, encoding)
 
     return distances
