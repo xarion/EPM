@@ -50,7 +50,7 @@ class PerturbedImagesDataset(Dataset):
 
         img_name = os.path.join(self.root_dir,
                                 self.files_list[idx])
-        image = Image.open(img_name)
+        image = Image.open(img_name).convert('RGB')
         torch_image_data = self.transform(image)
         torch_image_class = torch.from_numpy(np.array([IMAGE_CLASS]))
         torch_image_class = torch_image_class.float()
