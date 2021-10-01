@@ -61,17 +61,23 @@ class InputImageSavingHook:
 class EncodingSavingHook:
     def __init__(self, model_name, image_class, xai_name):
         self.encoding_store = []
+        self.counter = torch.zeros(1, dtype=torch.int32)
         self.xai_name = xai_name
-        self.counter = 0
         self.model_name = model_name
         self.image_class = image_class
 
     def hook(self, module, input_, output):
-        out = output.clone()
+        out = output.detach()
         if out.dim() > 2:
             out = out.mean([2, 3])
-        self.encoding_store.append(out.detach().cpu().numpy().copy())
+        self.encoding_store.append(out.cpu().numpy())
+        if len(self.encoding_store) > 10000:
+            self.save_encodings()
 
     def save_encodings(self):
-        np.save(f"{DATA_LOCATION}/{self.model_name}_{self.image_class}_{self.xai_name}.npy",
-                np.concatenate(self.encoding_store, axis=0))
+        self.counter = self.counter.add(1)
+        np.save(
+            f"{DATA_LOCATION}/{self.model_name}_{self.image_class}_{self.xai_name}_{self.counter.numpy()[0]}.npy",
+            np.concatenate(self.encoding_store, axis=0))
+        del self.encoding_store
+        self.encoding_store = torch.Tensor()

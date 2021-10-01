@@ -9,7 +9,7 @@ from models import create_model, EncodingSavingHook
 def main(model_name, image_class):
     xai_method_name = "ShapleyValueSampling"
     ds = get_validation_dataset(image_class)
-    dl = DataLoader(ds, batch_size=1, num_workers=16)
+    dl = DataLoader(ds, batch_size=50, num_workers=16)
 
     encoding_saving_hook = EncodingSavingHook(model_name, image_class, xai_method_name)
     model, features = create_model(model_name)
