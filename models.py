@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchvision
 
-from config import MODEL_NAME, IMAGE_MEAN, IMAGE_STD, USE_CUDA, IMAGE_CLASS
+from config import IMAGE_MEAN, IMAGE_STD, USE_CUDA, DATA_LOCATION
 
 
 def __resnet50():
@@ -14,21 +14,22 @@ def __densenet121():
     model = torchvision.models.densenet121(pretrained=True)
     return model, model.features
 
+
 def __mnasnet1_0():
     model = torchvision.models.mnasnet1_0(pretrained=True)
     return model, model.layers
 
 
-def create_model():
-    if MODEL_NAME == "resnet50":
+def create_model(model_name):
+    if model_name == "resnet50":
         model, features = __resnet50()
-    elif MODEL_NAME == "densenet121":
+    elif model_name == "densenet121":
         model, features = __densenet121()
-    elif MODEL_NAME == "mnasnet1.0":
+    elif model_name == "mnasnet1.0":
         model, features = __mnasnet1_0()
 
     else:
-        raise NotImplementedError(f"{MODEL_NAME} is not implemented")
+        raise NotImplementedError(f"{model_name} is not implemented")
     if USE_CUDA:
         model.cuda()
     model.eval()
@@ -36,12 +37,11 @@ def create_model():
     return torch.nn.Sequential(model, softmax), features
 
 
-def create_image_saving_model(xai_name):
+def create_image_saving_model(model_name, xai_name):
     input_image_saving_hook = InputImageSavingHook(xai_name)
-    model, features = create_model()
+    model, features = create_model(model_name)
     model.register_forward_hook(input_image_saving_hook.hook)
     return model
-
 
 
 class InputImageSavingHook:
@@ -59,24 +59,19 @@ class InputImageSavingHook:
 
 
 class EncodingSavingHook:
-    def __init__(self, name):
+    def __init__(self, model_name, image_class, xai_name):
         self.encoding_store = []
-        self.name = name
+        self.xai_name = xai_name
         self.counter = 0
+        self.model_name = model_name
+        self.image_class = image_class
 
     def hook(self, module, input_, output):
         out = output.clone()
         if out.dim() > 2:
             out = out.mean([2, 3])
         self.encoding_store.append(out.detach().cpu().numpy().copy())
-        # if self.encoding_store is None:
-        #     self.encoding_store = encodings
-        # else:
-        #     self.encoding_store = np.concatenate([self.encoding_store, encodings], axis=0)
-        # self.counter += 1
-        #
-        # if (self.counter % 1000) == 0:
-        #     self.save_encodings()
 
     def save_encodings(self):
-        np.save(f"{MODEL_NAME}_{IMAGE_CLASS}_{self.name}.npy", np.concatenate(self.encoding_store, axis=0))
+        np.save(f"{DATA_LOCATION}/{self.model_name}_{self.image_class}_{self.xai_name}.npy",
+                np.concatenate(self.encoding_store, axis=0))

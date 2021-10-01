@@ -1,27 +1,27 @@
 from captum.attr import Occlusion
 from torch.utils.data import DataLoader
 
-from config import IMAGE_CLASS, USE_CUDA
+from config import USE_CUDA, tennis_ball_class
 from dataset import get_validation_dataset
 from models import create_model, EncodingSavingHook
 
 
-def main():
+def main(model_name, image_class):
     xai_method_name = "Occlusion"
-    ds = get_validation_dataset()
-    dl = DataLoader(ds, batch_size=1, pin_memory=True)
+    ds = get_validation_dataset(image_class)
+    dl = DataLoader(ds, batch_size=50, pin_memory=True)
 
-    encoding_saving_hook = EncodingSavingHook(xai_method_name)
-    model, features = create_model()
+    encoding_saving_hook = EncodingSavingHook(model_name, image_class, xai_method_name)
+    model, features = create_model(model_name)
     features.register_forward_hook(encoding_saving_hook.hook)
 
     for i, (images, labels) in enumerate(iter(dl)):
         if USE_CUDA:
             images = images.cuda()
         occlusion = Occlusion(model)
-        attributions = occlusion.attribute(images, target=IMAGE_CLASS,
-                                           sliding_window_shapes=(3, 6, 6),
-                                           strides=(3, 3, 3),
+        attributions = occlusion.attribute(images, target=image_class,
+                                           sliding_window_shapes=(3, 22, 22),
+                                           strides=(3, 11, 11),
                                            show_progress=True)
 
         # default_cmap = LinearSegmentedColormap.from_list('custom blue',
@@ -40,4 +40,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main("resnet50", tennis_ball_class)
