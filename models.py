@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchvision
 
-from config import MODEL_NAME, IMAGE_MEAN, IMAGE_STD, USE_CUDA
+from config import MODEL_NAME, IMAGE_MEAN, IMAGE_STD, USE_CUDA, IMAGE_CLASS
 
 
 def __resnet50():
@@ -14,12 +14,19 @@ def __densenet121():
     model = torchvision.models.densenet121(pretrained=True)
     return model, model.features
 
+def __mnasnet1_0():
+    model = torchvision.models.mnasnet1_0(pretrained=True)
+    return model, model.layers
+
 
 def create_model():
     if MODEL_NAME == "resnet50":
         model, features = __resnet50()
     elif MODEL_NAME == "densenet121":
         model, features = __densenet121()
+    elif MODEL_NAME == "mnasnet1.0":
+        model, features = __mnasnet1_0()
+
     else:
         raise NotImplementedError(f"{MODEL_NAME} is not implemented")
     if USE_CUDA:
@@ -58,7 +65,10 @@ class EncodingSavingHook:
         self.counter = 0
 
     def hook(self, module, input_, output):
-        self.encoding_store.append(output.detach().cpu().numpy().copy())
+        out = output.clone()
+        if out.dim() > 2:
+            out = out.mean([2, 3])
+        self.encoding_store.append(out.detach().cpu().numpy().copy())
         # if self.encoding_store is None:
         #     self.encoding_store = encodings
         # else:
@@ -69,4 +79,4 @@ class EncodingSavingHook:
         #     self.save_encodings()
 
     def save_encodings(self):
-        np.save(f"{MODEL_NAME}_{self.name}.npy", np.concatenate(self.encoding_store, axis=0))
+        np.save(f"{MODEL_NAME}_{IMAGE_CLASS}_{self.name}.npy", np.concatenate(self.encoding_store, axis=0))
