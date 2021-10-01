@@ -1,12 +1,12 @@
-# MODEL_NAME = "mnasnet1.0"
+MODEL_NAME = "mnasnet1.0"
 # MODEL_NAME = "densenet121"
-MODEL_NAME = "resnet50"
+# MODEL_NAME = "resnet50"
 
 tennis_ball = 852
 printer_class = 742
 chocolate_sauce_class = 960
 
-IMAGE_CLASS = chocolate_sauce_class
+IMAGE_CLASS = tennis_ball
 
 PROJECT_ROOT = "/home/erdi/dev/EPM"
 

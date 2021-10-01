@@ -35,7 +35,7 @@ class PerturbedImagesDataset(Dataset):
 
     def __init__(self, root_dir):
         self.root_dir = root_dir
-        self.files_list = np.array([f for f in glob("*.jpg")])
+        self.files_list = np.array([f for f in glob(root_dir + "/*.jpg")])
         super().__init__()
         self.transform = T.Compose(
             [T.Resize(256), T.CenterCrop(224), T.Resize(64), T.ToTensor(),
