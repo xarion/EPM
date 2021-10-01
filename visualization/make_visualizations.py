@@ -111,9 +111,15 @@ def prepare_data_unnormalized_dataframes(dnn_name, xai_method, the_class, train_
 
 
 def create_paper_plots(dnn_name, the_class, normalize=True):
-    train_encodings, train_distances = viz_utils.get_id_data(npy_path(dnn_name, the_class, TRAINING), dnn_name)
 
-    df_train = pd.DataFrame(dict(x=train_distances))
+
+    if dnn_name in ["densenet121", "resnet50"]:
+        train_encodings = None
+        df_train = prepare_data_unnormalized_dataframes(dnn_name, TRAINING, the_class, train_encodings)
+    else:
+        train_encodings, train_distances = viz_utils.get_id_data(npy_path(dnn_name, the_class, TRAINING), dnn_name)
+        df_train = pd.DataFrame(dict(x=train_distances))
+
     df_val = prepare_data_unnormalized_dataframes(dnn_name, VALIDATION, the_class, train_encodings)
     df_lime = prepare_data_unnormalized_dataframes(dnn_name, LIME, the_class, train_encodings)
     df_anchor = prepare_data_unnormalized_dataframes(dnn_name, ANCHOR, the_class, train_encodings)
@@ -124,12 +130,13 @@ def create_paper_plots(dnn_name, the_class, normalize=True):
     df_whitenoise = prepare_data_unnormalized_dataframes(dnn_name, WHITENOISE, the_class, train_encodings)
     df_anime = prepare_data_unnormalized_dataframes(dnn_name, ANIME, the_class, train_encodings)
 
+    all_distances = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion,
+                     df_whitenoise, df_anime]
+
+    low, high = viz_utils.get_low_high(all_distances)
 
     if normalize:
-        all_distances = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion,
-                         df_whitenoise, df_anime]
 
-        low, high = viz_utils.get_low_high(all_distances)
         df_train = viz_utils.normalize_array_between(df_train, low, high, 0, 1)
         df_val = viz_utils.normalize_array_between(df_val, low, high, 0, 1)
         df_lime = viz_utils.normalize_array_between(df_lime, low, high, 0, 1)
@@ -183,7 +190,8 @@ def create_paper_plots(dnn_name, the_class, normalize=True):
         xlim = (0, 1)
 
     else:
-        xlim = (0, 190000)
+        xlim = (0, high)
+
         # ylim = (0, 7e-5)
         # plt.setp(axs, ylim=ylim)
 
@@ -198,4 +206,4 @@ def create_paper_plots(dnn_name, the_class, normalize=True):
         plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s_unnormalized.png" % dnn_name)
 
 
-create_paper_plots("resnet50", "tennisball", normalize=False)
+create_paper_plots("mnasnet1.0", "tennisball", normalize=False)
