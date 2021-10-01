@@ -324,9 +324,14 @@ def simple_kde_plot():
         plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/scratch/testing4.png")
 
 
-def create_paper_plots(dnn_name, n):
+def create_paper_plots(dnn_name, n, normalize=True):
     # n is the number of distributions that we have
-    df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", dnn_name)
+
+    if normalize:
+        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", dnn_name+"_normalized")
+    else:
+        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", dnn_name+"_unnormalized")
+
     print(df_path)
     
     training = "training_features"
@@ -337,6 +342,10 @@ def create_paper_plots(dnn_name, n):
     shapsamp = "ShapleyValueSampling"
     featperm = "FeaturePermutation"
     occlusion = "Occlusion"
+
+    if not os.path.exists(df_path):
+        print("path does not exist: %s, creating" % df_path)
+        os.mkdir(df_path)
     
     if len(os.listdir(df_path)) != n:
     
@@ -364,17 +373,18 @@ def create_paper_plots(dnn_name, n):
     
         all_distances = [train_distances, val_distances, lime_distances, anchor_distances, kernelshap_distances, shapsamp_distances,
                          featperm_distances, occlusion_distances]
-    
-        low, high = viz_utils.get_low_high(all_distances)
-    
-        train_distances = viz_utils.normalize_array_between(train_distances, low, high, 0, 1)
-        val_distances = viz_utils.normalize_array_between(val_distances, low, high, 0, 1)
-        lime_distances = viz_utils.normalize_array_between(lime_distances, low, high, 0, 1)
-        anchor_distances = viz_utils.normalize_array_between(anchor_distances, low, high, 0, 1)
-        kernelshap_distances = viz_utils.normalize_array_between(kernelshap_distances, low, high, 0, 1)
-        shapsamp_distances = viz_utils.normalize_array_between(shapsamp_distances, low, high, 0, 1)
-        featperm_distances = viz_utils.normalize_array_between(featperm_distances, low, high, 0, 1)
-        occlusion_distances = viz_utils.normalize_array_between(occlusion_distances, low, high, 0, 1)
+
+        if normalize:
+            low, high = viz_utils.get_low_high(all_distances)
+
+            train_distances = viz_utils.normalize_array_between(train_distances, low, high, 0, 1)
+            val_distances = viz_utils.normalize_array_between(val_distances, low, high, 0, 1)
+            lime_distances = viz_utils.normalize_array_between(lime_distances, low, high, 0, 1)
+            anchor_distances = viz_utils.normalize_array_between(anchor_distances, low, high, 0, 1)
+            kernelshap_distances = viz_utils.normalize_array_between(kernelshap_distances, low, high, 0, 1)
+            shapsamp_distances = viz_utils.normalize_array_between(shapsamp_distances, low, high, 0, 1)
+            featperm_distances = viz_utils.normalize_array_between(featperm_distances, low, high, 0, 1)
+            occlusion_distances = viz_utils.normalize_array_between(occlusion_distances, low, high, 0, 1)
 
         df_train = pd.DataFrame(dict(x=train_distances))
         df_val = pd.DataFrame(dict(x=val_distances))
@@ -388,7 +398,7 @@ def create_paper_plots(dnn_name, n):
         df_train.to_pickle(os.path.join(df_path, "%s.pkl" % training))
         df_val.to_pickle(os.path.join(df_path, "%s.pkl" % validation))
         df_lime.to_pickle(os.path.join(df_path, "%s.pkl" % lime))
-        df_anchor.to_pickle(os.path.join(df_path, "%s.pkl" % anchor))
+        df_anchor   .to_pickle(os.path.join(df_path, "%s.pkl" % anchor))
         df_kernelshap.to_pickle(os.path.join(df_path, "%s.pkl" % kernelshap))
         df_shapsamp.to_pickle(os.path.join(df_path, "%s.pkl" % shapsamp))
         df_featperm.to_pickle(os.path.join(df_path, "%s.pkl" % featperm))
@@ -411,7 +421,7 @@ def create_paper_plots(dnn_name, n):
 
     labels = ["train (250)", "val (50)", "LIME", "anchor LIME", "kernel SHAP", "SHAP val. sampl.", "feature perm.", "occlusion"]
 
-    bw = 1
+    bw = 0.3
     for i, ax in enumerate(axs):
         sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=bw, fill=True, alpha=1, linewidth=1) #), log_scale=(True, False))
 
@@ -425,6 +435,7 @@ def create_paper_plots(dnn_name, n):
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
         ax.spines['bottom'].set_color("steelblue")
+
         if i < len(labels)-1:
             for tick in ax.xaxis.get_major_ticks():
                 tick.tick1line.set_visible(False)
@@ -434,16 +445,28 @@ def create_paper_plots(dnn_name, n):
 
         else:
             ax.set_xlabel("Normalized Mahalanobis distance", size=10, color="black", family="sans-serif", weight="normal")
-            ax.set_xticklabels([0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=10, color="black", family="sans-serif", weight="normal")
+            if normalize:
+                ax.set_xticklabels([0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=10, color="black", family="sans-serif", weight="normal")
 
-        ax.get_yaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
 
+    if normalize:
+        xlim = (0, 1)
 
-    xlim = (0, 1)
+    else:
+        xlim = (0, 200000)
+        ylim = (0, 4e-5)
+        plt.setp(axs, ylim=ylim)
+
     plt.setp(axs, xlim=xlim)
+
+
     plt.tight_layout()
 
-    plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/kde_plot_%f.png" % bw)
+    if normalize:
+        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/kde_plot_%f_normalized.png" % bw)
+    else:
+        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/kde_plot_%f_unnormalized_yaxison_2.png" % bw)
 
 
-create_paper_plots("densenet121", n=8)
+create_paper_plots("densenet121", n=8, normalize=False)
