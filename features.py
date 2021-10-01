@@ -32,14 +32,14 @@ def save_features_from_folder(xai_method, folder="./"):
 
 
 class PerturbedImagesDataset(Dataset):
-    """Face Landmarks dataset."""
 
     def __init__(self, root_dir):
         self.root_dir = root_dir
-        self.files_list = np.array([f for f in glob("*.jpg") if ".1." not in f])
-        super(PerturbedImagesDataset).__init__(transform=T.Compose(
-            [T.Resize(256), T.CenterCrop(224), T.Resize(64), T.ToTensor(), Normalize(mean=IMAGE_MEAN,
-                                                                                     std=IMAGE_STD)]))
+        self.files_list = np.array([f for f in glob("*.jpg")])
+        super().__init__()
+        self.transform = T.Compose(
+            [T.Resize(256), T.CenterCrop(224), T.Resize(64), T.ToTensor(),
+             Normalize(mean=IMAGE_MEAN, std=IMAGE_STD)])
 
     def __len__(self):
         return len(self.files_list)
@@ -51,13 +51,7 @@ class PerturbedImagesDataset(Dataset):
         img_name = os.path.join(self.root_dir,
                                 self.files_list[idx])
         image = Image.open(img_name)
-        image_data = np.array(image)
-        if len(image_data.shape) == 2:
-            image_data = np.expand_dims(image_data, axis=2)
-            image_data = np.repeat(image_data, 3, axis=2)
-        image_data = image_data.transpose((2, 0, 1)).astype(float)
-        torch_image_data = torch.from_numpy(image_data)
-        torch_image_data = torch_image_data.float()
+        torch_image_data = self.transform(image)
         torch_image_class = torch.from_numpy(np.array([IMAGE_CLASS]))
         torch_image_class = torch_image_class.float()
         return torch_image_data, torch_image_class
