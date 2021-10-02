@@ -51,4 +51,4 @@ class PerturbedImagesDataset(Dataset):
                                 self.files_list[idx])
         image = Image.open(img_name).convert('RGB')
         torch_image_data = self.transform(image)
-        return torch_image_data, None
+        return torch_image_data, 0
