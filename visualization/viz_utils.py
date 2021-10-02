@@ -69,12 +69,12 @@ def save_as_df(things):
     npy_file_path = things[0]
     id_encodings = things[1]
     save_path = things[2]
-    print(npy_file_path, id_encodings.shape(), save_path)
-    # encoding = np.load(npy_file_path)
-    # dist = mahalanobis_distance(id_encodings, encoding)
-    # df_part = pd.DataFrame(dict(x=dist))
-    # df_part.to_pickle(save_path)
-    # print("%s saved as df" % npy_file_path)
+    print("\nnpy path: %s\nencoding shape: %s\nsave_path: %s\n" % (npy_file_path, id_encodings.shape, save_path))
+    encoding = np.load(npy_file_path)
+    dist = mahalanobis_distance(id_encodings, encoding)
+    df_part = pd.DataFrame(dict(x=dist))
+    df_part.to_pickle(save_path)
+    print("\n%s saved as df\n" % npy_file_path)
 
 
 def parallel_save_df(things, number_processes=10):
@@ -122,7 +122,7 @@ def get_data_to_be_measured(path, id_encodings, dnn_name, multiple_file_mode="ex
                 if parallel:
                     df_path = os.path.join("/media/gabi/DATADRIVE1/EPM/dataframes", the_class, "%s_unnormalized" % dnn_name, xai_method)
                     dfs_saved = os.listdir(df_path)
-                    set_saved_numbers = set([i.split(".npy")[0].split(".")[-1] for i in dfs_saved])
+                    set_saved_numbers = set([int(i.split(".pkl")[0].split(".")[-1]) for i in dfs_saved])
                     todo_numbers = list(set([i for i in range(1, 17)]) - set_saved_numbers)
                     if len(todo_numbers) > 0:
                         npy_list_todo = [os.path.join(path, "%s_%d_%s_%d.npy" % (dnn_name, class_num, xai_method, i)) for i in todo_numbers]
