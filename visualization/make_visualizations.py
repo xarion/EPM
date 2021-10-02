@@ -60,7 +60,6 @@ def npy_path(dnn_name, the_class, xai_method):
     return path
 
 
-
 def prepare_data_unnormalized_dataframes(dnn_name, xai_method, the_class, train_encodings):
     print(dnn_name, xai_method)
 
@@ -156,7 +155,7 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
         df_whitenoise = viz_utils.normalize_array_between(df_whitenoise, low, high, 0, 1)
         df_anime = viz_utils.normalize_array_between(df_anime, low, high, 0, 1)
 
-    dfs = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_occlusion, df_whitenoise, df_anime]
+    dfs = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion, df_whitenoise, df_anime]
 
     fig, axs = plt.subplots(nrows=len(dfs), ncols=1, figsize=(7,7))
 
@@ -219,5 +218,5 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
             plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_unnormalized.png" % (the_class, dnn_name))
 
 
-# create_paper_plots("resnet50", "tennisball", normalize=False, use_white_noise=True)
-create_paper_plots("mnasnet1.0", "tennisball", normalize=False, use_white_noise=True)
+# create_paper_plots("mnasnet1.0", "tennisball", normalize=False, use_white_noise=True)
+# create_paper_plots("densenet121", "tennisball", normalize=False, use_white_noise=True)
