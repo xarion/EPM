@@ -21,6 +21,9 @@ OCCLUSION = "Occlusion"
 WHITENOISE = "white_noise"
 ANIME = "anime"
 
+encodings_path = "/media/gabi/DATADRIVE1/EPM/files_npy"
+dataframes_path = "/media/gabi/DATADRIVE1/EPM/dataframes"
+
 
 def create_dummy_data(n):
     distributions = []
@@ -47,7 +50,7 @@ def create_gaussian_data():
 
 
 def npy_path(dnn_name, the_class, xai_method):
-    base_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/files_npy/", the_class)
+    base_path = os.path.join(encodings_path, the_class)
     path = os.path.join(base_path, "%s_%s.npy" % (dnn_name, xai_method))
     return path
 
@@ -85,9 +88,8 @@ def prepare_data_unnormalized_dataframes(dnn_name, xai_method, the_class, train_
             df = pd.read_pickle(df_path)
             
     else:
-        df_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", the_class, dnn_name+"_unnormalized")
-        pkl_path = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/dataframes", the_class, dnn_name+"_unnormalized",
-                                "%s.pkl" % xai_method)
+        df_path = os.path.join(dataframes_path, the_class, dnn_name+"_unnormalized")
+        pkl_path = os.path.join(dataframes_path, the_class, dnn_name+"_unnormalized", "%s.pkl" % xai_method)
 
         if not os.path.exists(df_path):
             print("path does not exist: %s, creating" % df_path)
@@ -201,9 +203,9 @@ def create_paper_plots(dnn_name, the_class, normalize=True):
     plt.tight_layout()
 
     if normalize:
-        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s_normalized.png" % dnn_name)
+        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_normalized.png" % (the_class, dnn_name))
     else:
-        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s_unnormalized.png" % dnn_name)
+        plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_unnormalized.png" % (the_class, dnn_name))
 
 
-create_paper_plots("mnasnet1.0", "tennisball", normalize=False)
+create_paper_plots("densenet121", "printer", normalize=False)
