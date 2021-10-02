@@ -76,43 +76,41 @@ def get_low_high(arrays):
 def get_id_data(path, dnn_name):
     encodings = np.load(path)
 
-    if dnn_name == "densenet121":
-        encodings = np.mean(np.mean(encodings, axis=-1), axis=-1)
-    elif dnn_name == "resnet50":
-        encodings = np.squeeze(encodings)
-    elif dnn_name == "mnasnet1.0":
-        pass
-
     distances = mahalanobis_distance(encodings, encodings)
     return encodings, distances
 
 
-def get_data_to_be_measured(path, id_encodings, dnn_name):
-    assert(dnn_name in ["densenet121", "resnet50", "mnasnet1.0"])
+def get_data_to_be_measured(path, id_encodings, dnn_name, multiple_file_mode="extend"):
+    assert(multiple_file_mode in ["extend", "average"]), "multiple_file_mode incorrect"
+    assert(dnn_name in ["densenet121", "resnet50", "mnasnet1.0"]), "dnn_name incorrect"
+
     # check if multiple files or not.
     # if multiple files, take average over the distances
     if os.path.isdir(path):
-        npys = [i for i in os.listdir(path) if i.__contains__(".npy")]
-        npys.sort()
-        distances = []
-        for i in npys:
-            encoding = np.load(os.path.join(path, i))[1:]
-            if dnn_name == "densenet121":
-                encoding = np.mean(np.mean(encoding, axis=-1), axis=-1)
-            elif dnn_name == "resnet50":
-                encoding = np.squeeze(encoding)
-            elif dnn_name == "mnasnet1.0":
-                pass
-            distances.append(np.mean(mahalanobis_distance(id_encodings, encoding)))
-        distances = np.array(distances)
+        if multiple_file_mode == "average":
+            npys = [i for i in os.listdir(path) if i.__contains__(".npy")]
+            npys.sort()
+            distances = []
+            for i in npys:
+                encoding = np.load(os.path.join(path, i))[1:]
+                distances.append(np.mean(mahalanobis_distance(id_encodings, encoding)))
+            distances = np.array(distances)
+
+        elif multiple_file_mode == "extend":
+            npys = [i for i in os.listdir(path) if i.__contains__(dnn_name)]
+            npys.sort()
+            distances = []
+            for i in npys:
+                encoding = np.load(path)
+                distances.extend(mahalanobis_distance(id_encodings, encoding))
+            distances = np.array(distances)
+
+        else:
+            print("multiple_file_mode incorrect")
+            return None
+
     else:
         encoding = np.load(path)
-        if dnn_name == "densenet121":
-            encoding = np.mean(np.mean(encoding, axis=-1), axis=-1)
-        elif dnn_name == "resnet50":
-            encoding = np.squeeze(encoding)
-        elif dnn_name == "mnasnet1.0":
-            pass
         distances = mahalanobis_distance(id_encodings, encoding)
 
     return distances
