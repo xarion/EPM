@@ -3,18 +3,18 @@ import torch
 from anchor import anchor_image
 from torch.utils.data import DataLoader
 
-from config import USE_CUDA
+from config import USE_CUDA, tennis_ball_class
 from dataset import get_validation_dataset
 from models import EncodingSavingHook, create_model
 
 
-def main():
+def main(model_name, image_class):
     xai_method_name = "AnchorLime"
-    ds = get_validation_dataset()
+    ds = get_validation_dataset(image_class)
     dl = DataLoader(ds, batch_size=1, pin_memory=True)
 
-    encoding_saving_hook = EncodingSavingHook(xai_method_name)
-    model, features = create_model()
+    encoding_saving_hook = EncodingSavingHook(model_name, image_class, xai_method_name)
+    model, features = create_model(model_name)
     features.register_forward_hook(encoding_saving_hook.hook)
 
     def __predict(_npy_image):
@@ -35,4 +35,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main("resnet50", tennis_ball_class)

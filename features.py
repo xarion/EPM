@@ -8,16 +8,17 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
 from torchvision.transforms import Normalize
 
-from config import IMAGE_CLASS, USE_CUDA, IMAGE_MEAN, IMAGE_STD
+from config import USE_CUDA, IMAGE_MEAN, IMAGE_STD
+from dataset import get_standard_image_transform
 from models import create_model, EncodingSavingHook
 
 
-def save_features(dataset, name):
-    encoding_saving_hook = EncodingSavingHook(name)
-    model, features = create_model()
+def save_features(model_name, image_class, dataset, dataset_name):
+    encoding_saving_hook = EncodingSavingHook(dataset_name, model_name, image_class)
+    model, features = create_model(model_name)
     features.register_forward_hook(encoding_saving_hook.hook)
 
-    dataloader = DataLoader(dataset, batch_size=16, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=50, pin_memory=True)
 
     for i, (images, labels) in enumerate(iter(dataloader)):
         if USE_CUDA:
@@ -26,9 +27,9 @@ def save_features(dataset, name):
     encoding_saving_hook.save_encodings()
 
 
-def save_features_from_folder(xai_method, folder="./"):
+def save_features_from_folder(model_name, image_class, dataset_name, folder="./"):
     dataset = PerturbedImagesDataset(folder)
-    save_features(dataset, xai_method)
+    save_features(model_name, image_class, dataset, dataset_name)
 
 
 class PerturbedImagesDataset(Dataset):
@@ -37,9 +38,7 @@ class PerturbedImagesDataset(Dataset):
         self.root_dir = root_dir
         self.files_list = np.array([f for f in glob(root_dir + "/*.jpg")])
         super().__init__()
-        self.transform = T.Compose(
-            [T.Resize(256), T.CenterCrop(224), T.Resize(64), T.ToTensor(),
-             Normalize(mean=IMAGE_MEAN, std=IMAGE_STD)])
+        self.transform = get_standard_image_transform()
 
     def __len__(self):
         return len(self.files_list)
@@ -52,6 +51,4 @@ class PerturbedImagesDataset(Dataset):
                                 self.files_list[idx])
         image = Image.open(img_name).convert('RGB')
         torch_image_data = self.transform(image)
-        torch_image_class = torch.from_numpy(np.array([IMAGE_CLASS]))
-        torch_image_class = torch_image_class.float()
-        return torch_image_data, torch_image_class
+        return torch_image_data, None
