@@ -244,11 +244,11 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
 # WITH ShapleyValueSampling + FeaturePermutation
 # create_paper_plots("mnasnet1.0", "tennisball", normalize=False, use_white_noise=True) # DONE
 # create_paper_plots("mnasnet1.0", "printer", normalize=False, use_white_noise=True, parallel=False) # 01:44 # DONE
-# create_paper_plots("mnasnet1.0", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False)
+# create_paper_plots("mnasnet1.0", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=True)
 #
 # create_paper_plots("densenet121", "tennisball", normalize=False, use_white_noise=True) # DONE
-# create_paper_plots("densenet121", "printer", normalize=False, use_white_noise=True, parallel=False)
-# create_paper_plots("densenet121", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False)
+# create_paper_plots("densenet121", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=True)
+# create_paper_plots("densenet121", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=True)
 #
 # create_paper_plots("resnet50", "tennisball", normalize=False, use_white_noise=True)
 # create_paper_plots("resnet50", "printer", normalize=False, use_white_noise=True, parallel=False)
@@ -267,4 +267,4 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
 
 # create_paper_plots("resnet50", "tennisball", normalize=False, use_white_noise=True, use_all=False)
 # create_paper_plots("resnet50", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=False)
-# create_paper_plots("resnet50", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False)
+create_paper_plots("resnet50", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False)
