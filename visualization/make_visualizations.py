@@ -117,7 +117,7 @@ def prepare_data_unnormalized_dataframes(dnn_name, xai_method, the_class, train_
     return df
 
 
-def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=False, parallel=False, use_all=False):
+def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=False, parallel=False, use_all=False, plot_name=None):
 
 
     # if dnn_name in ["densenet121", "resnet50"]:
@@ -178,20 +178,45 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
     else:
         labels = ["train", "val", "anime", "LIME", "anchor LIME", "kernel SHAP", "occlusion"]
 
+
+    fig.suptitle("%s %s" % (viz_utils.get_fancy(dnn_name, the_class)))
+
     bw = 0.3
     for i, ax in enumerate(axs):
-        sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=bw, fill=True, alpha=1, linewidth=1) #), log_scale=(True, False))
+        g = sns.kdeplot(data=dfs[i], ax=axs[i], bw_adjust=bw, fill=True, alpha=1, linewidth=1) #), log_scale=(True, False))
 
         ax.get_legend().remove()
-        ax.grid(True, color="steelblue", linestyle='--', linewidth=0.1, which="major", alpha=0.4)
+        ax.grid(True, color="steelblue", linestyle='--', linewidth=0.2, which="major", alpha=1)
 
-        ax.set_ylabel(labels[i], rotation=0, labelpad=5, ha="right", va="top", size=9, color="steelblue",
-                      family="sans-serif", weight="bold")
+        ax.set_ylabel(labels[i], rotation=0, labelpad=5, ha="right", va="top", size=10, color="black",
+                      family="sans-serif", weight="normal")
 
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
         ax.spines['bottom'].set_color("steelblue")
+        ax.yaxis.tick_right()
+
+        ylabels = list(g.get_yticks())
+        # print(ylabels)
+        new_ylabel = []
+        for y in ylabels:
+            if y != 0.:
+                y = "{:e}".format(float(y))
+                p1, p2 = y.split(".")
+                p2 = str(int(p2.split("e")[-1]))
+                if p2 == "0":
+                    y = p1
+                else:
+                    y = p1 + "e" + p2
+            else:
+                y = "0"
+            new_ylabel.append(y)
+        ylabels = new_ylabel
+
+        ax.set_yticklabels(ylabels, fontsize=9, color="black", family="sans-serif", weight="normal")
+        ax.yaxis.set_tick_params(length=0)
+
 
         if i < len(labels)-1:
             for tick in ax.xaxis.get_major_ticks():
@@ -201,10 +226,13 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
                 tick.label2.set_visible(False)
 
         else:
-            ax.set_xlabel("Mahalanobis distance %s" % dnn_name, size=10, color="black", family="sans-serif", weight="normal")
+            ax.set_xlabel("Mahalanobis distance", size=10, color="black", family="sans-serif", weight="normal")
+            # xlabels = list(g.get_xticks())
+            # ax.set_xticklabels(xlabels, fontsize=9, color="black", family="sans-serif", weight="normal")
+
             if normalize:
-                ax.set_xlabel("Normalized Mahalanobis distance %s" % dnn_name, size=10, color="black", family="sans-serif", weight="normal")
-                ax.set_xticklabels([0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=10, color="black", family="sans-serif", weight="normal")
+                ax.set_xlabel("Normalized Mahalanobis distance", size=10, color="black", family="sans-serif", weight="normal")
+                ax.set_xticklabels([0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=9, color="black", family="sans-serif", weight="normal")
 
         # ax.get_yaxis().set_ticks([])
 
@@ -222,7 +250,9 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
 
     plt.tight_layout()
 
-    if normalize:
+    if not plot_name is None:
+        plt.savefig(plot_name)
+    elif normalize:
         plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_normalized.png" % (the_class, dnn_name))
     else:
         if use_white_noise:
@@ -239,12 +269,17 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
             
     
 
+# fixing the plots
+pname = os.path.join("/home/gabi/PycharmProjects/EPM/visualization/scratch", "fixing_plot.png")
+create_paper_plots("resnet50", "tennisball", normalize=False, use_white_noise=True, use_all=False, plot_name=pname)
+
+
 # ---------------------------------------------------------------------------------
 
 # WITH ShapleyValueSampling + FeaturePermutation
 # create_paper_plots("mnasnet1.0", "tennisball", normalize=False, use_white_noise=True) # DONE
 # create_paper_plots("mnasnet1.0", "printer", normalize=False, use_white_noise=True, parallel=False) # 01:44 # DONE
-# create_paper_plots("mnasnet1.0", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=True)
+# create_paper_plots("mnasnet1.0", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=True) # DONE
 #
 # create_paper_plots("densenet121", "tennisball", normalize=False, use_white_noise=True) # DONE
 # create_paper_plots("densenet121", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=True)
@@ -260,11 +295,11 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
 # create_paper_plots("mnasnet1.0", "tennisball", normalize=False, use_white_noise=True, use_all=False) # DONE
 # create_paper_plots("mnasnet1.0", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
 # create_paper_plots("mnasnet1.0", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
-
+#
 # create_paper_plots("densenet121", "tennisball", normalize=False, use_white_noise=True, use_all=False) # DONE
 # create_paper_plots("densenet121", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
 # create_paper_plots("densenet121", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
-
+#
 # create_paper_plots("resnet50", "tennisball", normalize=False, use_white_noise=True, use_all=False)
 # create_paper_plots("resnet50", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=False)
-create_paper_plots("resnet50", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False)
+# create_paper_plots("resnet50", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False)
