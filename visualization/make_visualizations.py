@@ -117,28 +117,35 @@ def prepare_data_unnormalized_dataframes(dnn_name, xai_method, the_class, train_
     return df
 
 
-def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=False, parallel=False):
+def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=False, parallel=False, use_all=False):
 
 
     # if dnn_name in ["densenet121", "resnet50"]:
     #     train_encodings = None
     #     df_train = prepare_data_unnormalized_dataframes(dnn_name, TRAINING, the_class, train_encodings)
     # else:
-    # TODO: save the train distances a pkl
     train_encodings, train_distances = viz_utils.get_id_data(npy_path(dnn_name, the_class, TRAINING), dnn_name)
     df_train = pd.DataFrame(dict(x=train_distances))
+
+    df_shapsamp = None
+    df_featperm = None
 
     df_val = prepare_data_unnormalized_dataframes(dnn_name, VALIDATION, the_class, train_encodings, parallel=parallel)
     df_lime = prepare_data_unnormalized_dataframes(dnn_name, LIME, the_class, train_encodings, parallel=parallel)
     df_anchor = prepare_data_unnormalized_dataframes(dnn_name, ANCHOR, the_class, train_encodings, parallel=parallel)
     df_kernelshap = prepare_data_unnormalized_dataframes(dnn_name, KERNELSHAP, the_class, train_encodings, parallel=parallel)
-    df_shapsamp = prepare_data_unnormalized_dataframes(dnn_name, SHAPSAMP, the_class, train_encodings, parallel=parallel)
-    df_featperm = prepare_data_unnormalized_dataframes(dnn_name, FEATPERM, the_class, train_encodings, parallel=parallel)
+    if use_all:
+        df_shapsamp = prepare_data_unnormalized_dataframes(dnn_name, SHAPSAMP, the_class, train_encodings, parallel=parallel)
+        df_featperm = prepare_data_unnormalized_dataframes(dnn_name, FEATPERM, the_class, train_encodings, parallel=parallel)
     df_occlusion = prepare_data_unnormalized_dataframes(dnn_name, OCCLUSION, the_class, train_encodings, parallel=parallel)
     df_whitenoise = prepare_data_unnormalized_dataframes(dnn_name, WHITENOISE, the_class, train_encodings, parallel=parallel)
     df_anime = prepare_data_unnormalized_dataframes(dnn_name, ANIME, the_class, train_encodings, parallel=parallel)
 
-    all_distances = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_occlusion, df_anime]
+    # all_distances = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_occlusion, df_anime]
+    if use_all:
+        all_distances = [df_train, df_val, df_whitenoise, df_anime, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion]
+    else:
+        all_distances = [df_train, df_val, df_whitenoise, df_anime, df_lime, df_anchor, df_kernelshap, df_occlusion]
 
     low, high = viz_utils.get_low_high(all_distances)
 
@@ -149,21 +156,27 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
         df_lime = viz_utils.normalize_array_between(df_lime, low, high, 0, 1)
         df_anchor = viz_utils.normalize_array_between(df_anchor, low, high, 0, 1)
         df_kernelshap = viz_utils.normalize_array_between(df_kernelshap, low, high, 0, 1)
-        df_shapsamp = viz_utils.normalize_array_between(df_shapsamp, low, high, 0, 1)
-        df_featperm = viz_utils.normalize_array_between(df_featperm, low, high, 0, 1)
+        if use_all:
+            df_shapsamp = viz_utils.normalize_array_between(df_shapsamp, low, high, 0, 1)
+            df_featperm = viz_utils.normalize_array_between(df_featperm, low, high, 0, 1)
         df_occlusion = viz_utils.normalize_array_between(df_occlusion, low, high, 0, 1)
         df_whitenoise = viz_utils.normalize_array_between(df_whitenoise, low, high, 0, 1)
         df_anime = viz_utils.normalize_array_between(df_anime, low, high, 0, 1)
-
-    dfs = [df_train, df_val, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion, df_whitenoise, df_anime]
+    
+    if use_all:
+        dfs = [df_train, df_val, df_whitenoise, df_anime, df_lime, df_anchor, df_kernelshap, df_shapsamp, df_featperm, df_occlusion]
+    else:
+        dfs = [df_train, df_val, df_whitenoise, df_anime, df_lime, df_anchor, df_kernelshap, df_occlusion]
 
     fig, axs = plt.subplots(nrows=len(dfs), ncols=1, figsize=(7,7))
 
     if use_white_noise:
-        # labels = ["train", "val", "LIME", "anchor LIME", "kernel SHAP", "occlusion", "white noise", "anime"]
-        labels = ["train", "val", "LIME", "anchor LIME", "kernel SHAP","Shapley val. samp.", "feature perm.", "occlusion", "white noise", "anime"]
+        if use_all:
+            labels = ["train", "val", "white noise", "anime", "LIME", "anchor LIME", "kernel SHAP","Shapley val. samp.", "feature perm.", "occlusion"]
+        else:
+            labels = ["train", "val", "white noise", "anime", "LIME", "anchor LIME", "kernel SHAP", "occlusion"]
     else:
-        labels = ["train", "val", "LIME", "anchor LIME", "kernel SHAP", "occlusion", "anime"]
+        labels = ["train", "val", "anime", "LIME", "anchor LIME", "kernel SHAP", "occlusion"]
 
     bw = 0.3
     for i, ax in enumerate(axs):
@@ -213,19 +226,45 @@ def create_paper_plots(dnn_name, the_class, normalize=True, use_white_noise=Fals
         plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_normalized.png" % (the_class, dnn_name))
     else:
         if use_white_noise:
-            plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_unnormalized_wn.png" % (the_class, dnn_name))
+            if use_all:
+                plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_unnormalized_wn.png" % (the_class, dnn_name))
+            else:
+                plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_unnormalized_wn_min2meths.png" % (the_class, dnn_name))
+                
         else:
             plt.savefig("/home/gabi/PycharmProjects/EPM/visualization/paper_images/%s/%s_unnormalized.png" % (the_class, dnn_name))
+        
+        
+        
+            
+    
 
+# ---------------------------------------------------------------------------------
 
+# WITH ShapleyValueSampling + FeaturePermutation
 # create_paper_plots("mnasnet1.0", "tennisball", normalize=False, use_white_noise=True) # DONE
-create_paper_plots("mnasnet1.0", "printer", normalize=False, use_white_noise=True, parallel=False) # 01:44 # DONE
-create_paper_plots("mnasnet1.0", "chocolatesaus", normalize=False, use_white_noise=True, parallel=False)
+# create_paper_plots("mnasnet1.0", "printer", normalize=False, use_white_noise=True, parallel=False) # 01:44 # DONE
+# create_paper_plots("mnasnet1.0", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False)
 #
 # create_paper_plots("densenet121", "tennisball", normalize=False, use_white_noise=True) # DONE
-create_paper_plots("densenet121", "printer", normalize=False, use_white_noise=True, parallel=False)
-create_paper_plots("densenet121", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False)
+# create_paper_plots("densenet121", "printer", normalize=False, use_white_noise=True, parallel=False)
+# create_paper_plots("densenet121", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False)
 #
 # create_paper_plots("resnet50", "tennisball", normalize=False, use_white_noise=True)
 # create_paper_plots("resnet50", "printer", normalize=False, use_white_noise=True, parallel=False)
 # create_paper_plots("resnet50", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False)
+
+# ---------------------------------------------------------------------------------
+
+# WITHOUT ShapleyValueSampling + FeaturePermutation
+# create_paper_plots("mnasnet1.0", "tennisball", normalize=False, use_white_noise=True, use_all=False) # DONE
+# create_paper_plots("mnasnet1.0", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
+# create_paper_plots("mnasnet1.0", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
+
+# create_paper_plots("densenet121", "tennisball", normalize=False, use_white_noise=True, use_all=False) # DONE
+# create_paper_plots("densenet121", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
+# create_paper_plots("densenet121", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False) # DONE
+
+# create_paper_plots("resnet50", "tennisball", normalize=False, use_white_noise=True, use_all=False)
+# create_paper_plots("resnet50", "printer", normalize=False, use_white_noise=True, parallel=False, use_all=False)
+# create_paper_plots("resnet50", "chocolatesauce", normalize=False, use_white_noise=True, parallel=False, use_all=False)
