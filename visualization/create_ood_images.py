@@ -2,7 +2,6 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from visualization.viz_utils import save_figure
 from PIL import Image
 import os
 
