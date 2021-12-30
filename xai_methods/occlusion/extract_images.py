@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 
 from config import USE_CUDA, tennis_ball_class
 from dataset import get_validation_dataset
-from models import create_image_saving_model
+from models import EncodingSavingHook, create_image_saving_model
 
 
 def main(model_name, image_class):

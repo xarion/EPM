@@ -33,13 +33,18 @@ def main():
     df["Class Name"] = df["Class Name"].str.replace("tennisball", "Tennis Ball")
     df["Class Name"] = df["Class Name"].str.replace("printer", "Printer")
 
+    occlusion_mean = df[df["Class Name"] == "Printer"]["Hermitry"].mean()
+    print(f"mean Printer: {occlusion_mean:.3f}")
+
     df["Hermitry"] = df["Hermitry"].map(lambda h: f"{h:.3f}")
     df = df.sort_values(["XAI Method", "Model", "Class Name"], ascending=[False, True, True])
     hermits = df[df["Hermitry"].map(float) > 0.3]
     normies = df[df["Hermitry"].map(float) <= 0.3]
 
-    print(hermits.to_latex(index=False, caption="Hermitries", label="tab:hermitries", escape=False))
-    print(normies.to_latex(index=False, caption="Hermitries", label="tab:hermitries", escape=False))
+    # print(hermits.to_latex(index=False, caption="Hermitries", label="tab:hermitries", escape=False))
+    # print(normies.to_latex(index=False, caption="Hermitries", label="tab:hermitries", escape=False))
+
+
     return 0
 
 

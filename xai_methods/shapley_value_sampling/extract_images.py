@@ -1,4 +1,4 @@
-from captum.attr import Occlusion
+from captum.attr import ShapleyValueSampling
 from torch.utils.data import DataLoader
 
 from config import USE_CUDA, tennis_ball_class
@@ -7,20 +7,17 @@ from models import create_image_saving_model
 
 
 def main(model_name, image_class):
-    xai_method_name = "Occlusion"
+    xai_method_name = "ShapleyValueSampling"
     ds = get_validation_dataset(image_class)
-    dl = DataLoader(ds, batch_size=50, pin_memory=True)
+    dl = DataLoader(ds, batch_size=50, num_workers=16)
 
     model = create_image_saving_model(model_name, xai_method_name)
 
     for i, (images, labels) in enumerate(iter(dl)):
         if USE_CUDA:
             images = images.cuda()
-        occlusion = Occlusion(model)
-        attributions = occlusion.attribute(images, target=image_class,
-                                           sliding_window_shapes=(3, 22, 22),
-                                           strides=(3, 11, 11),
-                                           show_progress=True)
+        shapley_value_sampling = ShapleyValueSampling(model)
+        shapley_value_sampling.attribute(images, target=image_class, n_samples=1, show_progress=True)
 
 
 if __name__ == "__main__":
